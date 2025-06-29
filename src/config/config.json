@@ -1,0 +1,19 @@
+{
+  "physics": {
+    "attractForce": 0.1,
+    "repelForce": 1.0,
+    "damping": 0.05
+  },
+  "display": {
+    "fps": 60,
+    "maxNodes": 20,
+    "fov": 75,
+    "colors": {
+      "central": "#C300FF",
+      "orbit": "#FF3366"
+    }
+  },
+  "traits": {
+    "dimensions": 3
+  }
+}
