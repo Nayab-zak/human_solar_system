@@ -1,0 +1,8 @@
+<ng-template #tip let-nodeData>
+  <div class="trait-hover-tooltip">
+    <b>{{ nodeData.name }}</b><br />
+    <ng-container *ngFor="let attr of nodeData.attributes | keyvalue">
+      {{ attr.key }}: {{ attr.value }}<br />
+    </ng-container>
+  </div>
+</ng-template>

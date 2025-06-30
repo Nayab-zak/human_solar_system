@@ -1,0 +1,16 @@
+.trait-hover-tooltip {
+  position: fixed;
+  z-index: 2000;
+  min-width: 120px;
+  max-width: 260px;
+  padding: 16px 20px;
+  background: #23202a;
+  color: #fff;
+  border-radius: 20px;
+  box-shadow: inset 5px 5px 10px #111;
+  border: 2px solid #C300FF;
+  font-size: 15px;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  opacity: 0.97;
+}

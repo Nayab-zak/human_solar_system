@@ -1,0 +1,29 @@
+.attribute-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 18px;
+  padding: 12px 0;
+}
+
+.attr-slider {
+  background: #23202a;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px #1118;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+mat-label {
+  color: #C300FF;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+span {
+  text-align: right;
+  color: #fff;
+  font-size: 13px;
+  margin-top: 2px;
+}

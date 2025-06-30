@@ -1,0 +1,6 @@
+{
+  "entryPoints": ["projects/trait-visual-lib/src/lib"],
+  "out": "docs",
+  "excludePrivate": true,
+  "includeVersion": true
+}

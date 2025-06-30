@@ -1,0 +1,23 @@
+<form [formGroup]="configForm" class="config-panel">
+  <mat-form-field appearance="fill">
+    <mat-label>Node Count</mat-label>
+    <mat-slider formControlName="nodeCount" min="1" max="20" step="1" thumbLabel tickInterval="1"></mat-slider>
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>Attribute Count</mat-label>
+    <mat-slider formControlName="attrCount" min="3" max="10" step="1" thumbLabel tickInterval="1"></mat-slider>
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>Attraction (kAttract)</mat-label>
+    <mat-slider formControlName="kAttract" min="0" max="100" step="1" thumbLabel tickInterval="10"></mat-slider>
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>Repulsion (kRep)</mat-label>
+    <mat-slider formControlName="kRep" min="0" max="100" step="1" thumbLabel tickInterval="10"></mat-slider>
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>Damping</mat-label>
+    <mat-slider formControlName="damping" min="0" max="1" step="0.01" thumbLabel tickInterval="0.1"></mat-slider>
+  </mat-form-field>
+  <mat-slide-toggle formControlName="lowPower">Low Power Mode</mat-slide-toggle>
+</form>

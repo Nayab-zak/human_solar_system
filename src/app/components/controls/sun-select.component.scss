@@ -1,0 +1,13 @@
+.mat-form-field {
+  min-width: 200px;
+  margin: 0 16px;
+}
+
+mat-select {
+  background: #23202a;
+  color: #fff;
+}
+
+mat-option[disabled] {
+  color: #888 !important;
+}

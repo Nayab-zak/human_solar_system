@@ -1,0 +1,7 @@
+<div class="attribute-editor-grid">
+  <div *ngFor="let ctrl of attrControls.controls; let i = index" class="attr-slider">
+    <mat-label>Attribute {{i+1}}</mat-label>
+    <mat-slider [formControl]="ctrl" min="0" max="100" step="1" thumbLabel tickInterval="10"></mat-slider>
+    <span>{{ctrl.value}}</span>
+  </div>
+</div>
