@@ -1,0 +1,40 @@
+.tv-panel {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  padding: .75rem 1rem;
+  background: rgba(0,0,0,.65);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 8px;
+  backdrop-filter: blur(6px);
+  display: grid;
+  gap: .5rem;
+  width: 220px;
+
+  h4 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  label {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: .5rem;
+
+    select, input[type=range] {
+      width: 100%;
+    }
+  }
+
+  .tv-toggle {
+    display:flex;
+    align-items:center;
+    gap:.5rem;
+    input{margin:0;}
+  }
+}

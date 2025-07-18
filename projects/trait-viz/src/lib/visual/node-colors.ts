@@ -1,0 +1,13 @@
+import * as THREE from 'three';
+
+export const COLOR_CENTRAL_YELLOW = new THREE.Color('#ffd400'); // bright yellow
+
+/** Map 0..1 compat to Blueyard galaxy colors (low compat=>magenta). */
+export function compatToColor(t: number, out = new THREE.Color()): THREE.Color {
+  t = Math.max(0, Math.min(1, t));
+  if (t < 0.25) out.set('#ff4fd2');       // magenta
+  else if (t < 0.5) out.set('#7e6bff');   // violet
+  else if (t < 0.75) out.set('#1d8bff');  // blue
+  else out.set('#8ee1ff');                // cyan
+  return out;
+}

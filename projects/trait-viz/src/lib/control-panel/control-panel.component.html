@@ -1,0 +1,120 @@
+<div class="tv-panel" *ngIf="nodes?.length">
+
+  <h4>Simulation</h4>
+
+  <label>
+    Central:
+    <select [ngModel]="centralIndex" (ngModelChange)="onCentralChange($event)">
+      <option *ngFor="let n of nodes; index as i" [ngValue]="i">{{n.id}}</option>
+    </select>
+  </label>
+
+  <label>
+    k Attraction: {{kAttraction | number:'1.1-1'}}
+    <input type="range" min="0" max="10" step="0.1" [ngModel]="kAttraction" (ngModelChange)="onKA($event)">
+  </label>
+
+  <label>
+    k Repulsion: {{kRepulsion | number:'1.1-1'}}
+    <input type="range" min="0" max="10" step="0.1" [ngModel]="kRepulsion" (ngModelChange)="onKR($event)">
+  </label>
+
+  <label>
+    Damping: {{damping | number:'1.2-2'}}
+    <input type="range" min="0.80" max="0.99" step="0.005" [ngModel]="damping" (ngModelChange)="onDamp($event)">
+  </label>
+
+  <label>
+    Angular Speed: {{angularSpeed | number:'1.2-2'}}
+    <input type="range" min="0" max="2" step="0.01" [ngModel]="angularSpeed" (ngModelChange)="onAng($event)">
+  </label>
+
+  <label>
+    Rest Radius: {{restLength | number:'1.0-0'}}
+    <input type="range" min="10" max="200" step="1" [ngModel]="restLength" (ngModelChange)="onRest($event)">
+  </label>
+
+  <h4>Dataset</h4>
+
+  <label>
+    Traits (3-10): {{traitCount}}
+    <input type="range" min="3" max="10" [ngModel]="traitCount"
+           (ngModelChange)="onTraitCount($event)">
+  </label>
+
+  <label>
+    Nodes (1-20): {{nodeCount}}
+    <input type="range" min="1" max="20" [ngModel]="nodeCount"
+           (ngModelChange)="onNodeCount($event)">
+  </label>
+
+  <hr>
+
+  <h4>Edit Node</h4>
+  <label>
+    Select:
+    <select [ngModel]="editNodeIndex" (ngModelChange)="onEditNodeChange($event)">
+      <option *ngFor="let n of nodes; index as i" [ngValue]="i">{{n.id}}</option>
+    </select>
+  </label>
+
+  <tv-node-sliders
+    [node]="nodes[editNodeIndex]"
+    [traitKeys]="traitKeys"
+    (edit)="handleNodeEdit($event)">
+  </tv-node-sliders>
+
+  <hr>
+  <h4>Visual</h4>
+
+  <label>
+    Glow: {{glowStrength | number:'1.1-1'}}
+    <input type="range" min="0" max="3" step="0.1" [ngModel]="glowStrength" (ngModelChange)="onGlow($event)">
+  </label>
+
+  <label>
+    Bend: {{galaxyBendStrength | number:'1.2-2'}}
+    <input type="range" min="0" max="1" step="0.01" [ngModel]="galaxyBendStrength" (ngModelChange)="onBend($event)">
+  </label>
+
+  <label>
+    Twinkle: {{galaxyTwinkleSpeed | number:'1.2-2'}}
+    <input type="range" min="0" max="2" step="0.01" [ngModel]="galaxyTwinkleSpeed" (ngModelChange)="onTw($event)">
+  </label>
+
+  <label>
+    Ambient Rot: {{galaxyAmbientRot | number:'1.3-3'}}
+    <input type="range" min="0" max="0.05" step="0.001" [ngModel]="galaxyAmbientRot" (ngModelChange)="onAmb($event)">
+  </label>
+
+  <label>
+    Particles: {{galaxyParticles}}
+    <input type="range" min="5000" max="80000" step="1000" [ngModel]="galaxyParticles" (ngModelChange)="onPart($event)">
+  </label>
+
+  <label>
+    Galaxy Repulsion: {{galaxyClearPush | number:'1.2-2'}}
+    <input type="range" min="0" max="1" step="0.01"
+           [ngModel]="galaxyClearPush" (ngModelChange)="onClearPush($event)">
+  </label>
+
+  <label>
+    Pocket Push: {{galaxyPocketPush | number:'1.2-2'}}
+    <input type="range" min="0" max="1" step="0.01"
+           [ngModel]="galaxyPocketPush" (ngModelChange)="onPocketPush($event)">
+  </label>
+
+  <label>
+    Pocket Ring Boost: {{galaxyPocketRingBoost | number:'1.1-1'}}
+    <input type="range" min="0" max="2" step="0.05"
+           [ngModel]="galaxyPocketRingBoost" (ngModelChange)="onPocketRingBoost($event)">
+  </label>
+
+  <button type="button" (click)="onGalaxyReseed();">Reseed Galaxy</button>
+
+  <label class="tv-toggle">
+    <input type="checkbox" [checked]="dragCluster" (change)="onDragModeChange($event)">
+    Tight Cluster Move
+  </label>
+
+</div>

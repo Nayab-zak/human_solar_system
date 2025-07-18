@@ -1,0 +1,32 @@
+.tv-node-sliders {
+  display: grid;
+  gap: .5rem;
+  font-size: 12px;
+}
+
+.tv-node-sliders h5 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.tv-node-sliders .section-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  opacity: .7;
+}
+
+.tv-node-sliders .slider-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: .5rem;
+  align-items: center;
+}
+
+.tv-node-sliders .slider-row span {
+  white-space: nowrap;
+}
+
+.tv-node-sliders .slider-row input[type=range] {
+  width: 100%;
+}
