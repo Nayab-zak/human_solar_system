@@ -40,8 +40,8 @@ export class ControlPanelComponent implements OnChanges {
   @Input() galaxyTwinkleSpeed = 0.5;
   @Input() galaxyAmbientRot = 0.005;
   @Input() galaxyParticles = 40000;
-  @Input() glowStrength = 1.2;
-  @Input() dragCluster = false;
+  @Input() glowStrength = 0.2;
+  @Input() dragCluster = true;
   @Input() galaxyClearPush = 1; // 0..1
   @Input() galaxyPocketPush = 0.8;
   @Input() galaxyPocketRingBoost = 1.2;
