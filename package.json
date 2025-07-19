@@ -4,7 +4,10 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build",
+    "build": "npm run build:lib && ng build trait-visualization-3d-demo --configuration production",
+    "build:lib": "ng build trait-viz --configuration production",
+    "build:demo": "ng build trait-visualization-3d-demo --configuration production",
+    "build:all": "npm run build:lib && npm run build:demo",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "serve:ssr:trait-visualization-3d-demo": "node dist/trait-visualization-3d-demo/server/server.mjs"
