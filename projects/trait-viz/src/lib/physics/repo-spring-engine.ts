@@ -15,6 +15,8 @@ export interface RepoSpringConfig {
   restLength: number;
   /** Fixed timestep seconds (e.g., 1/60). */
   dt: number;
+  /** Visual boundary radius for galaxy volume. */
+  visualRadius?: number;
 }
 
 export interface CentralRuntime {
@@ -35,7 +37,7 @@ export class RepoSpringEngine {
   central: CentralRuntime;
   outers: OuterRuntime[];
   keys: string[];
-  cfg: RepoSpringConfig;
+  cfg: RepoSpringConfig & { visualRadius: number };
 
   constructor(
     centralNode: TraitNode,
@@ -61,7 +63,7 @@ export class RepoSpringEngine {
       velocity: n.velocity ?? new THREE.Vector3(),
       mass: 1,
     }));
-    this.cfg = cfg;
+    this.cfg = { ...cfg, visualRadius: cfg.visualRadius ?? 80 };
   }
 
   /** Re-sync trait arrays if user edits values. Call before step if needed. */
@@ -137,6 +139,14 @@ export class RepoSpringEngine {
       o.velocity.addScaledVector(forces[i], dt / o.mass);
       o.velocity.multiplyScalar(damping);
       o.position.addScaledVector(o.velocity, dt);
+      
+      // Soft radial clamp to keep nodes inside galaxy volume
+      const maxR = 0.95 * this.cfg.visualRadius;   // visualRadius = e.g. bg.cfg.rOuter
+      const dist = o.position.length();
+      if (dist > maxR) {
+        o.position.multiplyScalar(maxR / dist);    // slide back onto boundary
+        o.velocity.multiplyScalar(0.2);            // lose energy on "wall" hit
+      }
     }
 
     // Angular swirl about Y

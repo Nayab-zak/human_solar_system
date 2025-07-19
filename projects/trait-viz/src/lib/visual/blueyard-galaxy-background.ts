@@ -1,4 +1,8 @@
 import * as THREE from 'three';
+import {
+  PAL_CYAN_LIGHT,PAL_CYAN_CORE,PAL_BLUE_CORE,PAL_BLUE_DEEP,
+  PAL_VIOLET,PAL_MAGENTA,PAL_TEAL_DARK,COLOR_DEEP_BLUE
+} from './blueyard-palette';
 const MAX_NODES = 32;
 
 export interface BlueyardGalaxyConfig {
@@ -28,6 +32,7 @@ export class BlueyardGalaxyBackground {
   private rotObj = new THREE.Object3D();
   private positions!: Float32Array;
   private colors!: Float32Array;
+  private brightness!: Float32Array;
   private nodeUniform: THREE.Vector4[];
   private time = 0;
 
@@ -56,6 +61,7 @@ export class BlueyardGalaxyBackground {
     this.seedParticles();
     this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions,3));
     this.geometry.setAttribute('color', new THREE.BufferAttribute(this.colors,3));
+    this.geometry.setAttribute('brightness', new THREE.BufferAttribute(this.brightness, 1));
 
     this.material = new THREE.ShaderMaterial({
       transparent:true,
@@ -76,6 +82,7 @@ export class BlueyardGalaxyBackground {
         uPocketFade:{value:this.cfg.pocketFade?1:0},
         uPocketPush:{value:this.cfg.pocketPush},
         uPocketRingBoost:{value:this.cfg.pocketRingBoost},
+        uPocketInner:{value:0.8},
       },
       vertexShader:this.vs(),
       fragmentShader:this.fs(),
@@ -100,6 +107,7 @@ export class BlueyardGalaxyBackground {
   setPocketPush(v:number){ this.cfg.pocketPush=v; this.material.uniforms['uPocketPush'].value=v; }
   setPocketFade(on:boolean){ this.cfg.pocketFade=on; this.material.uniforms['uPocketFade'].value=on?1:0; }
   setPocketRingBoost(v:number){ this.cfg.pocketRingBoost=v; this.material.uniforms['uPocketRingBoost'].value=v; }
+  setPocketInner(v:number){ this.material.uniforms['uPocketInner'].value = v; }
   setBendStrength(v:number){ this.cfg.bendStrength=v; this.material.uniforms['uBendStrength'].value=v; }
 
   update(dt:number){
@@ -115,8 +123,10 @@ export class BlueyardGalaxyBackground {
     this.seedParticles();
     this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions,3));
     this.geometry.setAttribute('color', new THREE.BufferAttribute(this.colors,3));
+    this.geometry.setAttribute('brightness', new THREE.BufferAttribute(this.brightness, 1));
     this.geometry.attributes['position'].needsUpdate=true;
     this.geometry.attributes['color'].needsUpdate=true;
+    this.geometry.attributes['brightness'].needsUpdate=true;
   }
 
   /* ---------- seeding ---------- */
@@ -124,21 +134,21 @@ export class BlueyardGalaxyBackground {
     const {count,rCore,rFlower,rOuter,flattenY,thicknessZ,flowerWeight} = this.cfg;
     this.positions = new Float32Array(count*3);
     this.colors    = new Float32Array(count*3);
+    this.brightness= new Float32Array(count);
+
     const col = new THREE.Color();
     for(let i=0;i<count;i++){
       const idx=i*3;
-
-      // choose radial bucket with weighting
       const u = Math.random();
       let r:number, ang:number;
-      if (u < 0.45){ // inner core (cyan/blue)
+
+      if (u < 0.45){ // inner core
         r = Math.pow(Math.random(),0.45)*rCore;
         ang = Math.random()*Math.PI*2;
-      } else if (u < 0.85){ // flower band (magenta petals / violet mix)
+      } else if (u < 0.85){ // flower band
         ang = Math.random()*Math.PI*2;
-        // petal amplitude: 5 lobes for richer "flower"
         const petals = 5.0;
-        const petalNoise = (Math.pow(Math.abs(Math.sin(ang*petals)),2.0) * (15.0*flowerWeight));
+        const petalNoise = Math.pow(Math.abs(Math.sin(ang*petals)),2.0) * (15.0*flowerWeight) * Math.random();
         r = rFlower + (Math.random()-0.5)*8 + petalNoise;
       } else { // halo
         ang = Math.random()*Math.PI*2;
@@ -147,29 +157,40 @@ export class BlueyardGalaxyBackground {
 
       const x = r*Math.cos(ang);
       let y = r*Math.sin(ang)*flattenY;
-      // low swirl to avoid streak lines
       y += Math.sin(r*0.03 + ang*3.0)*1.5;
-      const z = (Math.random()-0.5)*2*(rOuter*thicknessZ);
+      
+      // Volumetric Z fall-off
+      const radiusNorm = r / rOuter;                         // 0 .. 1
+      const zMax = (1.0 - radiusNorm*radiusNorm)             // quadratic fall-off
+                   * (rOuter * thicknessZ);                  // cfg.thicknessZ ≈ 0.35
+      const z = (Math.random() - 0.5) * 2 * zMax;
 
       this.positions[idx]=x;
       this.positions[idx+1]=y;
       this.positions[idx+2]=z;
 
-      // color ramp by region
-      if (r < rCore){
-        // blend cyan + blue noise
-        col.set('#8ee1ff').lerp(new THREE.Color('#1d8bff'), Math.random()*0.5);
-      } else if (r < rFlower){
-        // mostly blue→violet
-        col.set('#1d8bff').lerp(new THREE.Color('#7e6bff'), Math.random());
-      } else if (r < rFlower+30){
-        // magenta petals
-        col.set('#7e6bff').lerp(new THREE.Color('#ff4fd2'), Math.random());
+      // ---- color ramp w/ random jitter ----
+      const t = r / rOuter;
+      if (t < 0.2) {                     // bright cyan core
+        col.setRGB(0.70, 0.90, 1.00);
+        this.brightness[i] = 0.9 + Math.random()*0.1;
+      } else if (t < 0.35) {             // NEW deep-blue band (20-35 %)
+        col.copy(COLOR_DEEP_BLUE).lerp(new THREE.Color('#1a8dff'), Math.random()*0.4);
+        this.brightness[i] = 0.7 + Math.random()*0.2;
+      } else if (t < 0.55) {             // purple / violet mix
+        col.setRGB(0.50, 0.00, 1.00).lerp(new THREE.Color('#7e6bff'), Math.random()*0.6);
+        this.brightness[i] = 0.6 + Math.random()*0.2;
+      } else if (t < 0.80) {             // pink / magenta ring
+        col.setRGB(0.85, 0.15, 0.85);
+        this.brightness[i] = 0.5 + Math.random()*0.2;
       } else {
-        // dark halo speckled teal
-        col.set('#021626').lerp(new THREE.Color('#1d8bff'), Math.random()*0.15);
+        col.setRGB(0.10, 0.12, 0.22);      // far field dark
+        this.brightness[i] = 0.15 + Math.random()*0.1;
       }
-      this.colors[idx]=col.r;this.colors[idx+1]=col.g;this.colors[idx+2]=col.b;
+
+      this.colors[idx]=col.r;
+      this.colors[idx+1]=col.g;
+      this.colors[idx+2]=col.b;
     }
   }
 
@@ -189,9 +210,12 @@ export class BlueyardGalaxyBackground {
       uniform int   uPocketFade;
       uniform float uPocketPush;
       uniform float uPocketRingBoost;
+      uniform float uPocketInner;
 
+      attribute float brightness;
       varying vec3 vColor;
       varying float vFade;
+      varying float vBright;
 
       float hash3(vec3 p){
         return fract(sin(dot(p, vec3(127.1,311.7,74.7)))*43758.5453)*2.0-1.0;
@@ -215,10 +239,14 @@ export class BlueyardGalaxyBackground {
             }
             // push XY only (visual repulsion)
             if (uPocketPush>0.0){
-              vec2 dir = (distXY>0.0) ? (dc.xy/distXY) : vec2(0.0,1.0);
-              float push = (rVar - distXY) * uPocketPush;
-              pos.x += dir.x * push;
-              pos.y += dir.y * push;
+              float inner = uPocketInner;          // 0.8 means push only inner 80%
+              if (distXY < rVar * inner){
+                float k   = 1.0 - distXY / (rVar * inner);   // 1 → 0
+                vec2 dir  = (distXY > 0.0) ? dc.xy / distXY : vec2(0.0,1.0);
+                float push = k * (rVar*inner - distXY) * uPocketPush;
+                pos.x += dir.x * push;
+                pos.y += dir.y * push;
+              }
             }
             // edge brightness accent for ring look
             float ring = 1.0 - smoothstep(rVar*0.6, rVar, distXY);
@@ -250,6 +278,7 @@ export class BlueyardGalaxyBackground {
         float size = uPointSize*(1.0+tw);
 
         vFade = fade;
+        vBright = brightness;
         vec4 mv = modelViewMatrix * vec4(pos,1.0);
         float dist = -mv.z;
         gl_PointSize = size * (300.0/dist);
@@ -262,13 +291,16 @@ export class BlueyardGalaxyBackground {
     return /* glsl */`
       varying vec3 vColor;
       varying float vFade;
+      varying float vBright;
       void main(){
         vec2 uv = gl_PointCoord.xy*2.0-1.0;
         float d = dot(uv,uv);
         if (d>1.0) discard;
         float alpha = 1.0 - smoothstep(0.8,1.0,d);
-        alpha *= vFade;
-        gl_FragColor = vec4(vColor, alpha);
+        alpha *= vFade * vBright;
+        // gamma-ish brighten center but preserve color: raise color slightly by brightness too
+        vec3 c = vColor * (0.5 + 0.5*vBright); // scales 0.5..1.0
+        gl_FragColor = vec4(c, alpha);
       }
     `;
   }

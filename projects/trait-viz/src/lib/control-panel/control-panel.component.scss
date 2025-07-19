@@ -13,11 +13,93 @@
   display: grid;
   gap: .5rem;
   width: 220px;
+  max-height: calc(100vh - 4rem); /* Leave space for margins */
+  overflow-y: auto; /* Enable vertical scrolling */
+  overflow-x: hidden; /* Prevent horizontal scrolling */
+  transition: all 0.3s ease; /* Smooth transition for minimize/maximize */
+
+  /* Custom scrollbar styling */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.3);
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.5);
+  }
+
+  .tv-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+
+    h4 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: #00FFFF;
+    }
+  }
+
+  .tv-minimize-btn {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 24px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+      background: rgba(255,255,255,0.2);
+      border-color: rgba(255,255,255,0.4);
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+
+  .tv-panel-content {
+    display: grid;
+    gap: .5rem;
+    overflow: hidden;
+    transition: all 0.3s ease;
+
+    &.minimized {
+      max-height: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+  }
 
   h4 {
     margin: 0;
     font-size: 13px;
     font-weight: 600;
+    position: sticky; /* Make section headers sticky */
+    top: 0;
+    background: rgba(0,0,0,.8);
+    padding: 0.25rem 0;
+    z-index: 1;
   }
 
   label {

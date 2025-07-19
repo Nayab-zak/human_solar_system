@@ -1,13 +1,24 @@
 <div class="tv-panel" *ngIf="nodes?.length">
+  
+  <!-- Panel Header with Minimize Button -->
+  <div class="tv-panel-header">
+    <h4>Control Panel</h4>
+    <button class="tv-minimize-btn" (click)="toggleMinimized()" [title]="isMinimized ? 'Expand Panel' : 'Minimize Panel'">
+      {{ isMinimized ? '▼' : '▲' }}
+    </button>
+  </div>
 
-  <h4>Simulation</h4>
+  <!-- Panel Content (collapsible) -->
+  <div class="tv-panel-content" [class.minimized]="isMinimized">
+    
+    <h4>Simulation</h4>
 
-  <label>
-    Central:
-    <select [ngModel]="centralIndex" (ngModelChange)="onCentralChange($event)">
-      <option *ngFor="let n of nodes; index as i" [ngValue]="i">{{n.id}}</option>
-    </select>
-  </label>
+    <label>
+      Central: (Current: {{centralIndex}})
+      <select [value]="centralIndex" (change)="onDropdownChange($event)">
+        <option *ngFor="let n of nodes; index as i" [value]="i">{{i}}: {{n.id}}</option>
+      </select>
+    </label>
 
   <label>
     k Attraction: {{kAttraction | number:'1.1-1'}}
@@ -116,5 +127,7 @@
     <input type="checkbox" [checked]="dragCluster" (change)="onDragModeChange($event)">
     Tight Cluster Move
   </label>
+
+  </div> <!-- Close tv-panel-content -->
 
 </div>

@@ -124,6 +124,9 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
   private anim?: number;
   private lastTime = performance.now();
 
+  // Tooltip mouse tracking
+  private mouse = new THREE.Vector2();
+
   constructor(@Inject(PLATFORM_ID) private platformId: Object) {}
 
   ngAfterViewInit(){
@@ -293,6 +296,9 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
   private startLoop = () => {
     this.anim = requestAnimationFrame(this.startLoop);
 
+    // Tooltip raycasting
+    this.updateTooltip();
+
     const now = performance.now();
     const dt = (now - this.lastTime) / 1000;
     this.lastTime = now;
@@ -365,10 +371,110 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
   }
 
   handleCentralChange(i: number){
+    if (i === this.centralIndex) return; // no change
+    
+    if (!this.nodes || i >= this.nodes.length || i < 0) {
+      console.error('Invalid central index:', i, 'Nodes length:', this.nodes?.length);
+      return;
+    }
+    
+    // Update central index and rebuild scene
     this.centralIndex = i;
-    this.buildScene(); // rebuild meshes & engine with new central
-    // Update cluster bubble after rebuilding scene
+    this.buildScene();
+  }
+
+  private rebuildSceneForCentralSwitch(savedPositions: Map<string, THREE.Vector3>, offset: THREE.Vector3) {
+    console.log('=== REBUILD SCENE START ===');
+    
+    // Clear previous meshes
+    this.outerMeshes.forEach(m => this.scene.remove(m));
+    if (this.centralMesh) this.scene.remove(this.centralMesh);
+    this.outerMeshes = [];
+
+    if (!this.nodes?.length) return;
+
+    // trait keys
+    this.traitKeys = getTraitKeys(this.nodes);
+
+    // CENTRAL - new central node at origin
+    const central = this.nodes[this.centralIndex];
+    console.log('Creating central node for:', central.id, 'at index:', this.centralIndex);
+    
+    const cMat = makeGlowySpriteMaterial(COLOR_CENTRAL_YELLOW);
+    console.log('Central material color:', COLOR_CENTRAL_YELLOW);
+    
+    const cSprite = new THREE.Sprite(cMat);
+    cSprite.scale.setScalar(this.nodeSpriteSize * 4); // bigger central
+    cSprite.position.set(0, 0, 0);
+    central.mesh = cSprite;
+    this.centralMesh = cSprite;
+    this.scene.add(cSprite);
+    
+    console.log('Central node created:', central.id, 'mesh scale:', cSprite.scale.x, 'position:', cSprite.position);
+    console.log('Central material after creation:', (cSprite.material as THREE.SpriteMaterial).color);
+
+    // OUTERS - restore positions with offset
+    let outerCount = 0;
+    for (let i = 0; i < this.nodes.length; i++) {
+      if (i === this.centralIndex) continue;
+      const n = this.nodes[i];
+      
+      // Create sprite with temp color (will be updated by engine)
+      const mat = makeGlowySpriteMaterial(0xffffff);
+      const s = new THREE.Sprite(mat);
+      s.scale.setScalar(this.nodeSpriteSize);
+      
+      // Restore position with offset, or use default if no saved position
+      const savedPos = savedPositions.get(n.id);
+      if (savedPos) {
+        const newPos = savedPos.clone().add(offset);
+        s.position.copy(newPos);
+        console.log(`Restored ${n.id} position:`, newPos);
+      } else {
+        // Fallback to default positioning if no saved position
+        const r = this.restLength + Math.random() * this.restLength * 0.5;
+        const theta = Math.random() * Math.PI * 2;
+        const x = r * Math.cos(theta);
+        const y = (Math.random() - 0.5) * r * 0.5;
+        const z = (Math.random() - 0.5) * r * 0.3;
+        s.position.set(x, y, z);
+        console.log(`Default position for ${n.id}:`, s.position);
+      }
+      
+      n.mesh = s;
+      if (!n.velocity) n.velocity = new THREE.Vector3();
+      this.outerMeshes.push(s);
+      this.scene.add(s);
+      outerCount++;
+    }
+
+    console.log(`Created ${outerCount} outer nodes`);
+    console.log('=== REBUILD SCENE BEFORE ENGINE ===');
+
+    // Rebuild physics engine
+    this.rebuildEngine();
+
+    console.log('=== REBUILD SCENE AFTER ENGINE ===');
+    console.log('Central mesh after engine rebuild:', this.centralMesh ? 'exists' : 'null');
+    if (this.centralMesh) {
+      const centralSprite = this.centralMesh as THREE.Sprite;
+      console.log('Central material color after engine:', (centralSprite.material as THREE.SpriteMaterial).color);
+    }
+
+    // Ensure central node stays yellow after engine rebuild
+    if (this.centralMesh) {
+      const centralSprite = this.centralMesh as THREE.Sprite;
+      if (centralSprite.material) {
+        (centralSprite.material as THREE.SpriteMaterial).color.copy(COLOR_CENTRAL_YELLOW);
+        console.log('Central node color FORCED to yellow after engine rebuild');
+        console.log('Final central color:', (centralSprite.material as THREE.SpriteMaterial).color);
+      }
+    }
+
+    // Update cluster bubble
     this.updateGalaxyClusterUniform();
+    
+    console.log('=== REBUILD SCENE COMPLETE ===');
   }
 
   handleSimChange(s: SimSettings){
@@ -502,8 +608,12 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
   };
 
   private onPointerMove = (ev: PointerEvent) => {
-    if (!this.dragActive) return;
     this.getPointerNDC(ev);
+    
+    // Update mouse coordinates for tooltip (copy from pointer)
+    this.mouse.copy(this.pointer);
+    
+    if (!this.dragActive) return;
     this.raycaster.setFromCamera(this.pointer, this.camera);
 
     // Ray intersect with XY plane at dragStartZ
@@ -566,10 +676,80 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
       if (d < minD) minD = d;
     }
     if (!isFinite(minD)) minD = 5;
-    const margin = 1.5; // very tight
-    const target = minD + margin;
-    this._clusterRadius = THREE.MathUtils.lerp(this._clusterRadius, target, 0.25);
+    const minPocket = 4;               // never smaller than this
+    const margin    = 1.2;             // just enough air
+    const target    = Math.max(minPocket, minD + margin);
+    this._clusterRadius = THREE.MathUtils.lerp(
+        this._clusterRadius ?? target, target, 0.25);
     this.galaxy.setCluster(center, this._clusterRadius);
+  }
+
+  private updateTooltip(){
+    const tooltip = document.getElementById('tooltip');
+    if (!tooltip) return;
+
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+    
+    // Collect all mesh objects to raycast against
+    const meshObjects: THREE.Object3D[] = [];
+    if (this.centralMesh) meshObjects.push(this.centralMesh);
+    this.outerMeshes.forEach(mesh => {
+      if (mesh) meshObjects.push(mesh);
+    });
+
+    const hits = this.raycaster.intersectObjects(meshObjects, false);
+    
+    if (hits.length > 0) {
+      const obj = hits[0].object;
+      let html = '';
+      
+      if (obj === this.centralMesh) {
+        // Central node - show name, traits, and preferences
+        const central = this.nodes[this.centralIndex];
+        const traits = Object.entries(central.traits)
+          .map(([key, val]) => `${key}: ${val.toFixed(1)}`)
+          .join(', ');
+        const prefs = Object.entries(central.preferences)
+          .map(([key, val]) => `${key}: ${val.toFixed(1)}`)
+          .join(', ');
+        html = `<b>Central: ${central.id}</b><br>` +
+               `Traits: [${traits}]<br>` +
+               `Preferences: [${prefs}]`;
+      } else {
+        // Find the outer node - show name, traits, and preferences
+        const nodeIndex = this.outerMeshes.findIndex(mesh => mesh === obj);
+        if (nodeIndex >= 0) {
+          const outerNodes = this.nodes.filter((_, i) => i !== this.centralIndex);
+          const node = outerNodes[nodeIndex];
+          if (node) {
+            const traits = Object.entries(node.traits)
+              .map(([key, val]) => `${key}: ${val.toFixed(1)}`)
+              .join(', ');
+            const prefs = Object.entries(node.preferences)
+              .map(([key, val]) => `${key}: ${val.toFixed(1)}`)
+              .join(', ');
+            html = `<b>Outer: ${node.id}</b><br>` +
+                   `Traits: [${traits}]<br>` +
+                   `Preferences: [${prefs}]`;
+          }
+        }
+      }
+      
+      if (html) {
+        tooltip.style.display = 'block';
+        tooltip.innerHTML = html;
+        
+        // Position tooltip near mouse with better positioning
+        const canvas = this.canvasRef.nativeElement;
+        const rect = canvas.getBoundingClientRect();
+        const x = (this.mouse.x * 0.5 + 0.5) * canvas.clientWidth + rect.left + 12;
+        const y = (-this.mouse.y * 0.5 + 0.5) * canvas.clientHeight + rect.top + 12;
+        tooltip.style.left = x + 'px';
+        tooltip.style.top = y + 'px';
+      }
+    } else {
+      tooltip.style.display = 'none';
+    }
   }
 
   ngOnDestroy(){

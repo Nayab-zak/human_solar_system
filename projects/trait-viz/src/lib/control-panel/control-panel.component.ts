@@ -24,6 +24,9 @@ export class ControlPanelComponent implements OnChanges {
   @Input() traitKeys: string[] = [];
   @Input() centralIndex = 0;
 
+  // Minimize state
+  isMinimized = false;
+
   @Input() kAttraction = 1;
   @Input() kRepulsion  = 1;
   @Input() damping     = 0.95;
@@ -66,6 +69,16 @@ export class ControlPanelComponent implements OnChanges {
     const i = +idx;
     this.centralIndex = i;
     this.centralChange.emit(i);
+  }
+
+  onDropdownChange(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    const value = target.value;
+    this.onCentralChange(value);
+  }
+
+  toggleMinimized() {
+    this.isMinimized = !this.isMinimized;
   }
 
   onEditNodeChange(idx: string){
