@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>TraitVisualization3dDemo</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <style>
+    #tooltip {
+      position: fixed;
+      z-index: 9999;
+      background: rgba(0, 20, 40, 0.95);
+      color: #00FFFF;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 12px;
+      display: none;
+      pointer-events: none;
+      border: 1px solid #00FFFF;
+      box-shadow: 0 4px 8px rgba(0, 255, 255, 0.3);
+      max-width: 300px;
+      line-height: 1.4;
+    }
+    
+    #tooltip b {
+      color: #FFFFFF;
+    }
+  </style>
+</head>
+<body>
+  <app-root></app-root>
+  <div id="tooltip"></div>
+</body>
+</html>

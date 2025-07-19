@@ -1,0 +1,147 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "newProjectRoot": "projects",
+  "projects": {
+    "trait-viz": {
+      "projectType": "library",
+      "root": "projects/trait-viz",
+      "sourceRoot": "projects/trait-viz/src",
+      "prefix": "tv",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/trait-viz/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/trait-viz/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:karma",
+          "options": {
+            "tsConfig": "projects/trait-viz/tsconfig.spec.json"
+          }
+        }
+      }
+    },
+    "trait-visualization-3d-demo": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss",
+          "skipTests": true
+        },
+        "@schematics/angular:class": {
+          "skipTests": true
+        },
+        "@schematics/angular:directive": {
+          "skipTests": true
+        },
+        "@schematics/angular:guard": {
+          "skipTests": true
+        },
+        "@schematics/angular:interceptor": {
+          "skipTests": true
+        },
+        "@schematics/angular:pipe": {
+          "skipTests": true
+        },
+        "@schematics/angular:resolver": {
+          "skipTests": true
+        },
+        "@schematics/angular:service": {
+          "skipTests": true
+        }
+      },
+      "root": "projects/trait-visualization-3d-demo",
+      "sourceRoot": "projects/trait-visualization-3d-demo/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "projects/trait-visualization-3d-demo/src/main.ts",
+            "tsConfig": "projects/trait-visualization-3d-demo/tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "projects/trait-visualization-3d-demo/public"
+              }
+            ],
+            "styles": [
+              "projects/trait-visualization-3d-demo/src/styles.scss"
+            ],
+            "server": "projects/trait-visualization-3d-demo/src/main.server.ts",
+            "outputMode": "server",
+            "ssr": {
+              "entry": "projects/trait-visualization-3d-demo/src/server.ts"
+            }
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "configurations": {
+            "production": {
+              "buildTarget": "trait-visualization-3d-demo:build:production"
+            },
+            "development": {
+              "buildTarget": "trait-visualization-3d-demo:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "extract-i18n": {
+          "builder": "@angular/build:extract-i18n"
+        },
+        "test": {
+          "builder": "@angular/build:karma",
+          "options": {
+            "tsConfig": "projects/trait-visualization-3d-demo/tsconfig.spec.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "projects/trait-visualization-3d-demo/public"
+              }
+            ],
+            "styles": [
+              "projects/trait-visualization-3d-demo/src/styles.scss"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "cli": {
+    "analytics": "7a86a46e-0d1a-4677-9e31-223153ffda5f"
+  }
+}

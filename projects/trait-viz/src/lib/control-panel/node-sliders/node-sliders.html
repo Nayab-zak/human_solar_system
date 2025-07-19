@@ -1,0 +1,21 @@
+<div class="tv-node-sliders" *ngIf="node">
+  <h5>{{ node.id }}</h5>
+
+  <ng-container *ngIf="showPreferences">
+    <div class="section-title">Preferences</div>
+    <div *ngFor="let k of traitKeys" class="slider-row">
+      <span>{{k}}: {{ prefVals[k] }}</span>
+      <input type="range" min="0" max="100"
+             [ngModel]="prefVals[k]" (ngModelChange)="onPrefChange(k,$event)">
+    </div>
+  </ng-container>
+
+  <ng-container *ngIf="showTraits">
+    <div class="section-title">Traits</div>
+    <div *ngFor="let k of traitKeys" class="slider-row">
+      <span>{{k}}: {{ traitVals[k] }}</span>
+      <input type="range" min="0" max="100"
+             [ngModel]="traitVals[k]" (ngModelChange)="onTraitChange(k,$event)">
+    </div>
+  </ng-container>
+</div>
