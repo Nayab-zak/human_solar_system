@@ -41,10 +41,26 @@ import { compatibility } from '../physics/math';
         [galaxyAmbientRot]="galaxyAmbientRot"
         [galaxyParticles]="galaxyParticles"
         [glowStrength]="glowStrength"
+        [galaxyPointSize]="galaxyPointSize"
         [dragCluster]="dragCluster"
         [galaxyClearPush]="galaxyClearPush"
         [galaxyPocketPush]="galaxyPocketPush"
         [galaxyPocketRingBoost]="galaxyPocketRingBoost"
+        [centralNodeClearance]="centralNodeClearance"
+        [spiralArms]="spiralArms"
+        [spiralTightness]="spiralTightness"
+        [spiralWinds]="spiralWinds"
+        [armWidth]="armWidth"
+        [armBrightness]="armBrightness"
+        [galaxyTiltX]="galaxyTiltX"
+        [galaxyTiltZ]="galaxyTiltZ"
+        [nebulaIntensity]="nebulaIntensity"
+        [nebulaClusters]="nebulaClusters"
+        [nebulaRadius]="nebulaRadius"
+        [fieldStarDensity]="fieldStarDensity"
+        [fieldStarDistance]="fieldStarDistance"
+        [diskEllipticity]="diskEllipticity"
+        [zGaussianStrength]="zGaussianStrength"
         (centralChange)="handleCentralChange($event)"
         (simChange)="handleSimChange($event)"
         (nodeEdit)="handleNodeEdit($event)"
@@ -54,6 +70,22 @@ import { compatibility } from '../physics/math';
         (galaxyClearPushChange)="handleClearPush($event)"
         (galaxyPocketPushChange)="handlePocketPush($event)"
         (galaxyPocketRingBoostChange)="handlePocketRingBoost($event)"
+        (centralClearanceChange)="handleCentralClearance($event)"
+        (galaxyPointSizeChange)="handlePointSize($event)"
+        (spiralArmsChange)="handleSpiralArms($event)"
+        (spiralTightnessChange)="handleSpiralTightness($event)"
+        (spiralWindsChange)="handleSpiralWinds($event)"
+        (armWidthChange)="handleArmWidth($event)"
+        (armBrightnessChange)="handleArmBrightness($event)"
+        (galaxyTiltXChange)="handleGalaxyTiltX($event)"
+        (galaxyTiltZChange)="handleGalaxyTiltZ($event)"
+        (nebulaIntensityChange)="handleNebulaIntensity($event)"
+        (nebulaClustersChange)="handleNebulaClusters($event)"
+        (nebulaRadiusChange)="handleNebulaRadius($event)"
+        (fieldStarDensityChange)="handleFieldStarDensity($event)"
+        (fieldStarDistanceChange)="handleFieldStarDistance($event)"
+        (diskEllipticityChange)="handleDiskEllipticity($event)"
+        (zGaussianStrengthChange)="handleZGaussianStrength($event)"
         (galaxyReseedChange)="handleGalaxyReseed()"
         (visualChange)="handleVisualChange($event)">
       </tv-control-panel>
@@ -78,7 +110,7 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
   @Input() kRepulsion  = 1;
   @Input() damping     = 0.95;
   @Input() angularSpeed = 0.25;
-  @Input() restLength   = 40;     // approximate target ring radius
+  @Input() restLength   = 25;     // approximate target ring radius - reduced for tighter clustering
   @Input() timestep     = 1/60;
 
   /** Dataset controls */
@@ -91,13 +123,37 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
   @Input() galaxyTwinkleSpeed = 0.5;
   @Input() galaxyAmbientRot = 0.005;
   @Input() glowStrength = 1.2;
-  @Input() dragCluster = false; // false=central-only, true=move cluster rigidly
+  @Input() galaxyPointSize = 2.0;  // Star size control
+  @Input() dragCluster = true; // true=move cluster rigidly, false=central-only
   @Input() integrateNodeColors = true; // recolor nodes to galaxy ramp
   @Input() nodeSpriteSize = 4; // px scale factor; central scaled larger
   @Input() galaxyClearPush = 1; // default full visual repulsion
   @Input() galaxyPocketPush = 0.8;       // 0..1
   @Input() galaxyPocketRingBoost = 1.2;  // 0..2
   @Input() galaxyFlowerWeight = 0.8;     // 0..1 (requires reseed)
+  @Input() centralNodeClearance = 2.5;   // multiplier for central node clear zone size
+
+  // Spiral galaxy parameters
+  @Input() spiralArms = 3;
+  @Input() spiralTightness = 0.15;
+  @Input() spiralWinds = 1.5;
+  @Input() armWidth = 0.15;
+  @Input() armBrightness = 1.3;
+  
+  // Galaxy tilt parameters
+  @Input() galaxyTiltX = 0;    // pitch tilt in degrees
+  @Input() galaxyTiltZ = 12;   // roll tilt in degrees
+  
+  // Background starfield parameters
+  @Input() nebulaIntensity = 1.0;
+  @Input() nebulaClusters = 8;
+  @Input() nebulaRadius = 25;
+  @Input() fieldStarDensity = 1.0;
+  @Input() fieldStarDistance = 1.8;
+  
+  // Elliptical disk shape parameters
+  @Input() diskEllipticity = 0.8;
+  @Input() zGaussianStrength = 1.0;
 
   private renderer!: THREE.WebGLRenderer;
   private scene!: THREE.Scene;
@@ -203,9 +259,32 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
       bendStrength: this.galaxyBendStrength,
       twinkleSpeed: this.galaxyTwinkleSpeed,
       ambientRotSpeed: this.galaxyAmbientRot,
+      pointSize: this.galaxyPointSize,  // Add point size configuration
       pocketPush: this.galaxyPocketPush,
       pocketRingBoost: this.galaxyPocketRingBoost,
       flowerWeight: this.galaxyFlowerWeight,
+      
+      // Spiral arm configuration - using component properties
+      spiralArms: this.spiralArms,
+      spiralTightness: this.spiralTightness,
+      spiralWinds: this.spiralWinds,
+      armWidth: this.armWidth,
+      armBrightness: this.armBrightness,
+      
+      // Galaxy tilt configuration
+      galaxyTiltX: this.galaxyTiltX,
+      galaxyTiltZ: this.galaxyTiltZ,
+      
+      // Background starfield configuration
+      nebulaIntensity: this.nebulaIntensity,
+      nebulaClusters: this.nebulaClusters,
+      nebulaRadius: this.nebulaRadius,
+      fieldStarDensity: this.fieldStarDensity,
+      fieldStarDistance: this.fieldStarDistance,
+      
+      // Elliptical disk shape configuration
+      diskEllipticity: this.diskEllipticity,
+      zGaussianStrength: this.zGaussianStrength,
     });
     this.scene.add(this.galaxy.getObject3D());
 
@@ -583,9 +662,106 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
     this.galaxyPocketRingBoost = v;
     this.galaxy?.setPocketRingBoost(v);
   }
+  
+  handleCentralClearance(v:number){
+    this.centralNodeClearance = v;
+    // Update cluster immediately to reflect the new clearance
+    this.updateGalaxyClusterUniform();
+  }
+
+  handlePointSize(v:number){
+    this.galaxyPointSize = v;
+    this.galaxy?.setPointSize(v);
+  }
 
   handleGalaxyReseed(){
     this.galaxy?.reseed();
+  }
+
+  // Spiral galaxy structure handlers
+  handleSpiralArms(v:number){
+    this.spiralArms = v;
+    this.galaxy?.setSpiralArms(v);
+    this.galaxy?.reseed(); // Need to reseed to apply structural changes
+  }
+
+  handleSpiralTightness(v:number){
+    this.spiralTightness = v;
+    this.galaxy?.setSpiralTightness(v);
+    this.galaxy?.reseed();
+  }
+
+  handleSpiralWinds(v:number){
+    this.spiralWinds = v;
+    this.galaxy?.setSpiralWinds(v);
+    this.galaxy?.reseed();
+  }
+
+  handleArmWidth(v:number){
+    this.armWidth = v;
+    this.galaxy?.setArmWidth(v);
+    this.galaxy?.reseed();
+  }
+
+  handleArmBrightness(v:number){
+    this.armBrightness = v;
+    this.galaxy?.setArmBrightness(v);
+    this.galaxy?.reseed();
+  }
+  
+  // Galaxy tilt handlers
+  handleGalaxyTiltX(v:number){
+    this.galaxyTiltX = v;
+    this.galaxy?.setGalaxyTiltX(v);
+  }
+  
+  handleGalaxyTiltZ(v:number){
+    this.galaxyTiltZ = v;
+    this.galaxy?.setGalaxyTiltZ(v);
+  }
+  
+  // Background starfield handlers
+  handleNebulaIntensity(v:number){
+    this.nebulaIntensity = v;
+    this.galaxy?.setNebulaIntensity(v);
+    this.galaxy?.reseed(); // Reseed to apply nebula changes
+  }
+  
+  handleNebulaClusters(v:number){
+    this.nebulaClusters = v;
+    this.galaxy?.setNebulaClusters(v);
+    this.galaxy?.reseed(); // Reseed to apply cluster changes
+  }
+  
+  handleNebulaRadius(v:number){
+    this.nebulaRadius = v;
+    this.galaxy?.setNebulaRadius(v);
+    this.galaxy?.reseed(); // Reseed to apply radius changes
+  }
+  
+  handleFieldStarDensity(v:number){
+    this.fieldStarDensity = v;
+    this.galaxy?.setFieldStarDensity(v);
+    this.galaxy?.reseed(); // Reseed to apply density changes
+  }
+  
+  handleFieldStarDistance(v:number){
+    this.fieldStarDistance = v;
+    this.galaxy?.setFieldStarDistance(v);
+    this.galaxy?.reseed(); // Reseed to apply distance changes
+  }
+  
+  // Elliptical disk shape handlers
+  handleDiskEllipticity(v:number){
+    this.diskEllipticity = v;
+    this.galaxy?.setDiskEllipticity(v);
+    this.galaxy?.reseed(); // Reseed to apply ellipticity changes
+  }
+  
+  handleZGaussianStrength(v:number){
+    this.zGaussianStrength = v;
+    this.galaxy?.setZGaussianStrength(v);
+    this.galaxy?.reseed(); // Reseed to apply gaussian strength changes
   }
 
   private getPointerNDC(event: PointerEvent){
@@ -667,6 +843,14 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
   private updateGalaxyClusterUniform(){
     if (!this.galaxy) return;
     const center = this.centralMesh ? this.centralMesh.position : new THREE.Vector3();
+    
+    // Enhanced cluster radius calculation for central node visibility
+    // Create a larger, more visible black space around the central yellow node
+    const centralNodeBaseRadius = 6;    // Base radius for central node visibility
+    const visibilityMultiplier = this.centralNodeClearance;   // User-configurable multiplier
+    const minVisiblePocket = centralNodeBaseRadius * visibilityMultiplier;
+    
+    // Still consider distance to nearest outer node for dynamic sizing
     let minD = Infinity;
     for (let i=0;i<this.nodes.length;i++){
       if (i===this.centralIndex) continue;
@@ -675,10 +859,12 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
       const d = center.distanceTo(m.position);
       if (d < minD) minD = d;
     }
-    if (!isFinite(minD)) minD = 5;
-    const minPocket = 4;               // never smaller than this
-    const margin    = 1.2;             // just enough air
-    const target    = Math.max(minPocket, minD + margin);
+    if (!isFinite(minD)) minD = minVisiblePocket;
+    
+    // Enhanced sizing: use larger of minimum visible pocket or dynamic sizing
+    const dynamicPocket = Math.min(minD * 0.7, minVisiblePocket * 1.5); // Up to 1.5x min size
+    const target = Math.max(minVisiblePocket, dynamicPocket);
+    
     this._clusterRadius = THREE.MathUtils.lerp(
         this._clusterRadius ?? target, target, 0.25);
     this.galaxy.setCluster(center, this._clusterRadius);

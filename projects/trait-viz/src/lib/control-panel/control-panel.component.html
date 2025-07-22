@@ -84,6 +84,11 @@
   </label>
 
   <label>
+    Star Size: {{galaxyPointSize | number:'1.1-1'}}
+    <input type="range" min="0.5" max="5.0" step="0.1" [ngModel]="galaxyPointSize" (ngModelChange)="onPointSize($event)">
+  </label>
+
+  <label>
     Bend: {{galaxyBendStrength | number:'1.2-2'}}
     <input type="range" min="0" max="1" step="0.01" [ngModel]="galaxyBendStrength" (ngModelChange)="onBend($event)">
   </label>
@@ -119,6 +124,94 @@
     Pocket Ring Boost: {{galaxyPocketRingBoost | number:'1.1-1'}}
     <input type="range" min="0" max="2" step="0.05"
            [ngModel]="galaxyPocketRingBoost" (ngModelChange)="onPocketRingBoost($event)">
+  </label>
+
+  <label>
+    Central Clear Zone: {{centralNodeClearance | number:'1.1-1'}}
+    <input type="range" min="1.0" max="5.0" step="0.1"
+           [ngModel]="centralNodeClearance" (ngModelChange)="onCentralClearance($event)">
+  </label>
+
+  <hr>
+  <h4>🌀 Spiral Structure</h4>
+  
+  <label>
+    Spiral Arms: {{spiralArms}}
+    <input type="range" min="1" max="6" step="1" [ngModel]="spiralArms" (ngModelChange)="onSpiralArms($event)">
+  </label>
+
+  <label>
+    Tightness: {{spiralTightness | number:'1.3-3'}}
+    <input type="range" min="0.05" max="0.4" step="0.01" [ngModel]="spiralTightness" (ngModelChange)="onSpiralTightness($event)">
+  </label>
+
+  <label>
+    Spiral Winds: {{spiralWinds | number:'1.1-1'}}
+    <input type="range" min="0.5" max="3.0" step="0.1" [ngModel]="spiralWinds" (ngModelChange)="onSpiralWinds($event)">
+  </label>
+
+  <label>
+    Arm Width: {{armWidth | number:'1.3-3'}}
+    <input type="range" min="0.05" max="0.35" step="0.01" [ngModel]="armWidth" (ngModelChange)="onArmWidth($event)">
+  </label>
+
+  <label>
+    Arm Brightness: {{armBrightness | number:'1.1-1'}}
+    <input type="range" min="1.0" max="2.0" step="0.1" [ngModel]="armBrightness" (ngModelChange)="onArmBrightness($event)">
+  </label>
+
+  <hr>
+  <h5>💫 Galactic Plane Tilt</h5>
+
+  <label>
+    Tilt X (Pitch): {{galaxyTiltX}}°
+    <input type="range" min="-30" max="30" step="1" [ngModel]="galaxyTiltX" (ngModelChange)="onGalaxyTiltX($event)">
+  </label>
+
+  <label>
+    Tilt Z (Roll): {{galaxyTiltZ}}°
+    <input type="range" min="-30" max="30" step="1" [ngModel]="galaxyTiltZ" (ngModelChange)="onGalaxyTiltZ($event)">
+  </label>
+
+  <hr>
+  <h5>🌌 Background Starfield</h5>
+
+  <label>
+    Nebula Intensity: {{nebulaIntensity | number:'1.1-1'}}
+    <input type="range" min="0" max="2.0" step="0.1" [ngModel]="nebulaIntensity" (ngModelChange)="onNebulaIntensity($event)">
+  </label>
+
+  <label>
+    Nebula Clusters: {{nebulaClusters}}
+    <input type="range" min="3" max="15" step="1" [ngModel]="nebulaClusters" (ngModelChange)="onNebulaClusters($event)">
+  </label>
+
+  <label>
+    Nebula Size: {{nebulaRadius}}
+    <input type="range" min="10" max="50" step="2" [ngModel]="nebulaRadius" (ngModelChange)="onNebulaRadius($event)">
+  </label>
+
+  <label>
+    Field Star Density: {{fieldStarDensity | number:'1.1-1'}}
+    <input type="range" min="0" max="2.0" step="0.1" [ngModel]="fieldStarDensity" (ngModelChange)="onFieldStarDensity($event)">
+  </label>
+
+  <label>
+    Field Star Distance: {{fieldStarDistance | number:'1.1-1'}}
+    <input type="range" min="1.2" max="3.0" step="0.1" [ngModel]="fieldStarDistance" (ngModelChange)="onFieldStarDistance($event)">
+  </label>
+
+  <hr>
+  <h5>🌌 Elliptical Disk Shape</h5>
+
+  <label>
+    Disk Ellipticity: {{diskEllipticity | number:'1.2-2'}}
+    <input type="range" min="0" max="1.0" step="0.05" [ngModel]="diskEllipticity" (ngModelChange)="onDiskEllipticity($event)">
+  </label>
+
+  <label>
+    Z Gaussian Strength: {{zGaussianStrength | number:'1.1-1'}}
+    <input type="range" min="0" max="2.0" step="0.1" [ngModel]="zGaussianStrength" (ngModelChange)="onZGaussianStrength($event)">
   </label>
 
   <button type="button" (click)="onGalaxyReseed();">Reseed Galaxy</button>

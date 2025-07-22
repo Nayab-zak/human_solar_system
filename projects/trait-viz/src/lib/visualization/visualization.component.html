@@ -1,0 +1,11 @@
+<div *ngIf="hoveredNode && tooltipPos" class="node-tooltip" [ngStyle]="{left: tooltipPos.x + 'px', top: tooltipPos.y + 'px'}">
+  <strong>{{hoveredNode.id}}</strong><br>
+  <span *ngIf="hoveredNode.traits">
+    <b>Traits:</b>
+    <span *ngFor="let k of traitKeys">{{k}}: {{hoveredNode.traits[k]}} </span>
+  </span><br>
+  <span *ngIf="hoveredNode.preferences">
+    <b>Preferences:</b>
+    <span *ngFor="let k of traitKeys">{{k}}: {{hoveredNode.preferences[k]}} </span>
+  </span>
+</div>

@@ -31,7 +31,7 @@ export class ControlPanelComponent implements OnChanges {
   @Input() kRepulsion  = 1;
   @Input() damping     = 0.95;
   @Input() angularSpeed = 0.25;
-  @Input() restLength   = 40;
+  @Input() restLength   = 25;
 
   @Input() traitCount = 3;           // initial
   @Input() nodeCount = 4;            // initial outer count
@@ -41,10 +41,34 @@ export class ControlPanelComponent implements OnChanges {
   @Input() galaxyAmbientRot = 0.005;
   @Input() galaxyParticles = 40000;
   @Input() glowStrength = 0.2;
+  @Input() galaxyPointSize = 2.0;  // Star size control
   @Input() dragCluster = true;
   @Input() galaxyClearPush = 1; // 0..1
   @Input() galaxyPocketPush = 0.8;
   @Input() galaxyPocketRingBoost = 1.2;
+  @Input() centralNodeClearance = 2.5; // multiplier for central node clear zone
+
+  // Spiral galaxy controls
+  @Input() spiralArms = 3;
+  @Input() spiralTightness = 0.15;
+  @Input() spiralWinds = 1.5;
+  @Input() armWidth = 0.15;
+  @Input() armBrightness = 1.3;
+  
+  // Galaxy tilt controls
+  @Input() galaxyTiltX = 0;    // pitch tilt in degrees
+  @Input() galaxyTiltZ = 12;   // roll tilt in degrees
+  
+  // Background starfield controls
+  @Input() nebulaIntensity = 1.0;
+  @Input() nebulaClusters = 8;
+  @Input() nebulaRadius = 25;
+  @Input() fieldStarDensity = 1.0;
+  @Input() fieldStarDistance = 1.8;
+  
+  // Elliptical disk shape controls
+  @Input() diskEllipticity = 0.8;
+  @Input() zGaussianStrength = 1.0;
 
   @Output() centralChange = new EventEmitter<number>();
   @Output() simChange = new EventEmitter<SimSettings>();
@@ -56,6 +80,30 @@ export class ControlPanelComponent implements OnChanges {
   @Output() galaxyPocketPushChange = new EventEmitter<number>();
   @Output() galaxyPocketRingBoostChange = new EventEmitter<number>();
   @Output() galaxyReseedChange = new EventEmitter<void>();
+  @Output() galaxyPointSizeChange = new EventEmitter<number>();  // Star size output
+  @Output() centralClearanceChange = new EventEmitter<number>(); // Central node clearance output
+
+  // Spiral structure outputs
+  @Output() spiralArmsChange = new EventEmitter<number>();
+  @Output() spiralTightnessChange = new EventEmitter<number>();
+  @Output() spiralWindsChange = new EventEmitter<number>();
+  @Output() armWidthChange = new EventEmitter<number>();
+  @Output() armBrightnessChange = new EventEmitter<number>();
+  
+  // Galaxy tilt outputs
+  @Output() galaxyTiltXChange = new EventEmitter<number>();
+  @Output() galaxyTiltZChange = new EventEmitter<number>();
+  
+  // Background starfield outputs
+  @Output() nebulaIntensityChange = new EventEmitter<number>();
+  @Output() nebulaClustersChange = new EventEmitter<number>();
+  @Output() nebulaRadiusChange = new EventEmitter<number>();
+  @Output() fieldStarDensityChange = new EventEmitter<number>();
+  @Output() fieldStarDistanceChange = new EventEmitter<number>();
+  
+  // Elliptical disk shape outputs
+  @Output() diskEllipticityChange = new EventEmitter<number>();
+  @Output() zGaussianStrengthChange = new EventEmitter<number>();
 
   @Output() visualChange = new EventEmitter<{
     bend:number; twinkle:number; ambient:number; particles:number; glow:number;
@@ -130,6 +178,11 @@ export class ControlPanelComponent implements OnChanges {
   onAmb(v:any){ this.galaxyAmbientRot=+v; this.emitVisual(); }
   onPart(v:any){ this.galaxyParticles=+v; this.emitVisual(); }
   onGlow(v:any){ this.glowStrength=+v; this.emitVisual(); }
+  
+  onPointSize(v:any){ 
+    this.galaxyPointSize=+v; 
+    this.galaxyPointSizeChange.emit(this.galaxyPointSize); 
+  }
 
   onClearPush(v:any){
     this.galaxyClearPush = +v;
@@ -146,6 +199,11 @@ export class ControlPanelComponent implements OnChanges {
     this.galaxyPocketRingBoostChange.emit(this.galaxyPocketRingBoost); 
   }
 
+  onCentralClearance(v:any){
+    this.centralNodeClearance = +v;
+    this.centralClearanceChange.emit(this.centralNodeClearance);
+  }
+
   onGalaxyReseed(){
     this.galaxyReseedChange.emit();
   }
@@ -153,5 +211,79 @@ export class ControlPanelComponent implements OnChanges {
   onDragModeChange(ev:any){
     this.dragCluster = !!ev.target.checked;
     this.dragClusterChange.emit(this.dragCluster);
+  }
+
+  // Spiral structure handlers
+  onSpiralArms(v:any){
+    this.spiralArms = +v;
+    this.spiralArmsChange.emit(this.spiralArms);
+  }
+
+  onSpiralTightness(v:any){
+    this.spiralTightness = +v;
+    this.spiralTightnessChange.emit(this.spiralTightness);
+  }
+
+  onSpiralWinds(v:any){
+    this.spiralWinds = +v;
+    this.spiralWindsChange.emit(this.spiralWinds);
+  }
+
+  onArmWidth(v:any){
+    this.armWidth = +v;
+    this.armWidthChange.emit(this.armWidth);
+  }
+
+  onArmBrightness(v:any){
+    this.armBrightness = +v;
+    this.armBrightnessChange.emit(this.armBrightness);
+  }
+  
+  // Galaxy tilt handlers
+  onGalaxyTiltX(v:any){
+    this.galaxyTiltX = +v;
+    this.galaxyTiltXChange.emit(this.galaxyTiltX);
+  }
+  
+  onGalaxyTiltZ(v:any){
+    this.galaxyTiltZ = +v;
+    this.galaxyTiltZChange.emit(this.galaxyTiltZ);
+  }
+  
+  // Background starfield handlers
+  onNebulaIntensity(v:any){
+    this.nebulaIntensity = +v;
+    this.nebulaIntensityChange.emit(this.nebulaIntensity);
+  }
+  
+  onNebulaClusters(v:any){
+    this.nebulaClusters = +v;
+    this.nebulaClustersChange.emit(this.nebulaClusters);
+  }
+  
+  onNebulaRadius(v:any){
+    this.nebulaRadius = +v;
+    this.nebulaRadiusChange.emit(this.nebulaRadius);
+  }
+  
+  onFieldStarDensity(v:any){
+    this.fieldStarDensity = +v;
+    this.fieldStarDensityChange.emit(this.fieldStarDensity);
+  }
+  
+  onFieldStarDistance(v:any){
+    this.fieldStarDistance = +v;
+    this.fieldStarDistanceChange.emit(this.fieldStarDistance);
+  }
+  
+  // Elliptical disk shape handlers
+  onDiskEllipticity(v:any){
+    this.diskEllipticity = +v;
+    this.diskEllipticityChange.emit(this.diskEllipticity);
+  }
+  
+  onZGaussianStrength(v:any){
+    this.zGaussianStrength = +v;
+    this.zGaussianStrengthChange.emit(this.zGaussianStrength);
   }
 }

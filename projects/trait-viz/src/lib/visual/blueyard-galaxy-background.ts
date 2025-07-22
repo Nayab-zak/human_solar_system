@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {
   PAL_CYAN_LIGHT,PAL_CYAN_CORE,PAL_BLUE_CORE,PAL_BLUE_DEEP,
-  PAL_VIOLET,PAL_MAGENTA,PAL_TEAL_DARK,COLOR_DEEP_BLUE
+  PAL_VIOLET,PAL_MAGENTA,PAL_TEAL_DARK,PAL_SPACE_BLACK,COLOR_DEEP_BLUE
 } from './blueyard-palette';
 const MAX_NODES = 32;
 
@@ -22,6 +22,32 @@ export interface BlueyardGalaxyConfig {
   pocketPush?: number;     // 0..1 XY push amount
   pocketRingBoost?: number;// 0..2 ring brightness at pocket edge
   flowerWeight?: number;   // 0..1 how strong magenta petals appear
+  
+  // Spiral arm configuration
+  spiralArms?: number;     // number of spiral arms (default 3)
+  spiralTightness?: number;// 0..1 how tightly wound (default 0.15)
+  spiralWinds?: number;    // how many times to wrap, in full rotations (default 1.5 = 270°)
+  armWidth?: number;       // relative width of spiral arms (default 0.15)
+  armBrightness?: number;  // brightness multiplier for arm particles (default 1.3)
+  
+  // Enhanced color controls
+  colorSaturation?: number; // 0..2 color saturation multiplier (default 1.0)
+  magentaBoost?: number;    // 0..2 magenta accent intensity in arms (default 1.0)
+  
+  // Galactic plane orientation
+  galaxyTiltX?: number;     // tilt around X axis in degrees (-30 to 30, default 0)
+  galaxyTiltZ?: number;     // tilt around Z axis in degrees (-30 to 30, default 12)
+  
+  // Background starfield & nebula effects
+  nebulaIntensity?: number; // 0..2 intensity of nebula clustering (default 1.0)
+  nebulaClusters?: number;  // number of nebula cluster centers (default 8)
+  nebulaRadius?: number;    // radius of each nebula cluster (default 25)
+  fieldStarDensity?: number; // 0..2 density of distant field stars (default 1.0)
+  fieldStarDistance?: number; // multiplier for field star distance (default 1.8)
+  
+  // Elliptical disk shape controls
+  diskEllipticity?: number;  // 0..1 how elliptical the Z profile is (0=flat, 1=full ellipse, default 0.8)
+  zGaussianStrength?: number; // 0..2 how gaussian the Z distribution is (default 1.0)
 }
 
 export class BlueyardGalaxyBackground {
@@ -49,11 +75,37 @@ export class BlueyardGalaxyBackground {
       ambientRotSpeed: cfg.ambientRotSpeed ?? 0.001,
       twinkleSpeed: cfg.twinkleSpeed ?? 0.2,
       twinkleAmp: cfg.twinkleAmp ?? 0.06,
-      pointSize: cfg.pointSize ?? 1.0,
+      pointSize: cfg.pointSize ?? 2.0,  // Even bigger galaxy stars
       pocketFade: cfg.pocketFade ?? true,
       pocketPush: cfg.pocketPush ?? 0.8,
       pocketRingBoost: cfg.pocketRingBoost ?? 1.2,
       flowerWeight: cfg.flowerWeight ?? 0.8,
+      
+      // Spiral arm defaults
+      spiralArms: cfg.spiralArms ?? 3,
+      spiralTightness: cfg.spiralTightness ?? 0.15,
+      spiralWinds: cfg.spiralWinds ?? 1.5,
+      armWidth: cfg.armWidth ?? 0.15,
+      armBrightness: cfg.armBrightness ?? 1.3,
+      
+      // Enhanced color defaults
+      colorSaturation: cfg.colorSaturation ?? 1.2,
+      magentaBoost: cfg.magentaBoost ?? 1.4,
+      
+      // Galactic tilt defaults (degrees)
+      galaxyTiltX: cfg.galaxyTiltX ?? 0,
+      galaxyTiltZ: cfg.galaxyTiltZ ?? 12, // Default 12° tilt for depth
+      
+      // Background starfield defaults
+      nebulaIntensity: cfg.nebulaIntensity ?? 1.0,
+      nebulaClusters: cfg.nebulaClusters ?? 8,
+      nebulaRadius: cfg.nebulaRadius ?? 25,
+      fieldStarDensity: cfg.fieldStarDensity ?? 1.0,
+      fieldStarDistance: cfg.fieldStarDistance ?? 1.8,
+      
+      // Elliptical disk defaults
+      diskEllipticity: cfg.diskEllipticity ?? 0.8,
+      zGaussianStrength: cfg.zGaussianStrength ?? 1.0,
     } as Required<BlueyardGalaxyConfig>;
 
     this.nodeUniform = Array.from({length:MAX_NODES},()=>new THREE.Vector4());
@@ -109,6 +161,79 @@ export class BlueyardGalaxyBackground {
   setPocketRingBoost(v:number){ this.cfg.pocketRingBoost=v; this.material.uniforms['uPocketRingBoost'].value=v; }
   setPocketInner(v:number){ this.material.uniforms['uPocketInner'].value = v; }
   setBendStrength(v:number){ this.cfg.bendStrength=v; this.material.uniforms['uBendStrength'].value=v; }
+  
+  // Spiral arm control methods
+  setSpiralArms(count:number){ 
+    this.cfg.spiralArms = Math.max(1, Math.min(8, Math.floor(count))); // 1-8 arms
+  }
+  setSpiralTightness(v:number){ 
+    this.cfg.spiralTightness = Math.max(0.05, Math.min(0.5, v)); // 0.05-0.5 range
+  }
+  setSpiralWinds(v:number){ 
+    this.cfg.spiralWinds = Math.max(0.5, Math.min(3.0, v)); // 0.5-3.0 rotations
+  }
+  setArmWidth(v:number){ 
+    this.cfg.armWidth = Math.max(0.05, Math.min(0.4, v)); // 0.05-0.4 relative width
+  }
+  setArmBrightness(v:number){ 
+    this.cfg.armBrightness = Math.max(1.0, Math.min(2.0, v)); // 1.0-2.0x brightness
+  }
+
+  // Enhanced color control methods
+  setColorSaturation(v:number){
+    this.cfg.colorSaturation = Math.max(0.5, Math.min(2.0, v)); // 0.5-2.0x saturation
+  }
+  
+  setMagentaBoost(v:number){
+    this.cfg.magentaBoost = Math.max(1.0, Math.min(3.0, v)); // 1.0-3.0x magenta intensity
+  }
+  
+  // Galactic tilt control methods
+  setGalaxyTiltX(degrees:number){
+    this.cfg.galaxyTiltX = Math.max(-30, Math.min(30, degrees)); // -30° to +30°
+    this.reseed(); // Re-apply tilt to all particles
+  }
+  
+  setGalaxyTiltZ(degrees:number){
+    this.cfg.galaxyTiltZ = Math.max(-30, Math.min(30, degrees)); // -30° to +30°
+    this.reseed(); // Re-apply tilt to all particles
+  }
+  
+  // Background starfield control methods
+  setNebulaIntensity(v:number){
+    this.cfg.nebulaIntensity = Math.max(0, Math.min(2.0, v)); // 0-2.0x intensity
+  }
+  
+  setNebulaClusters(count:number){
+    this.cfg.nebulaClusters = Math.max(3, Math.min(15, Math.floor(count))); // 3-15 clusters
+  }
+  
+  setNebulaRadius(v:number){
+    this.cfg.nebulaRadius = Math.max(10, Math.min(50, v)); // 10-50 radius
+  }
+  
+  setFieldStarDensity(v:number){
+    this.cfg.fieldStarDensity = Math.max(0, Math.min(2.0, v)); // 0-2.0x density
+  }
+  
+  setFieldStarDistance(v:number){
+    this.cfg.fieldStarDistance = Math.max(1.2, Math.min(3.0, v)); // 1.2-3.0x distance
+  }
+  
+  // Elliptical disk shape control methods
+  setDiskEllipticity(v:number){
+    this.cfg.diskEllipticity = Math.max(0, Math.min(1.0, v)); // 0-1.0 ellipticity
+  }
+  
+  setZGaussianStrength(v:number){
+    this.cfg.zGaussianStrength = Math.max(0, Math.min(2.0, v)); // 0-2.0x gaussian strength
+  }
+  
+  // Star size control method
+  setPointSize(v:number){
+    this.cfg.pointSize = Math.max(0.5, Math.min(5.0, v)); // 0.5-5.0 point size
+    this.material.uniforms['uPointSize'].value = this.cfg.pointSize;
+  }
 
   update(dt:number){
     this.time+=dt;
@@ -131,62 +256,303 @@ export class BlueyardGalaxyBackground {
 
   /* ---------- seeding ---------- */
   private seedParticles(){
-    const {count,rCore,rFlower,rOuter,flattenY,thicknessZ,flowerWeight} = this.cfg;
+    const {count,rCore,rFlower,rOuter,flattenY,thicknessZ,flowerWeight,
+           spiralArms,spiralTightness,spiralWinds,armWidth,armBrightness,
+           colorSaturation,magentaBoost,galaxyTiltX,galaxyTiltZ,
+           nebulaIntensity,nebulaClusters,nebulaRadius,fieldStarDensity,fieldStarDistance,
+           diskEllipticity,zGaussianStrength} = this.cfg;
     this.positions = new Float32Array(count*3);
     this.colors    = new Float32Array(count*3);
     this.brightness= new Float32Array(count);
+
+    // Create rotation matrix for galactic plane tilt
+    const tiltXRad = (galaxyTiltX * Math.PI) / 180;
+    const tiltZRad = (galaxyTiltZ * Math.PI) / 180;
+    
+    // Rotation matrices for X and Z axis tilts
+    const cosX = Math.cos(tiltXRad), sinX = Math.sin(tiltXRad);
+    const cosZ = Math.cos(tiltZRad), sinZ = Math.sin(tiltZRad);
+
+    // Pre-generate nebula cluster centers for consistent clustering
+    const nebulaCenters: {x: number, y: number, intensity: number}[] = [];
+    for (let i = 0; i < nebulaClusters; i++) {
+      const clusterAngle = Math.random() * Math.PI * 2;
+      const clusterRadius = rFlower + Math.random() * (rOuter - rFlower) * 0.7; // clusters in outer regions
+      nebulaCenters.push({
+        x: clusterRadius * Math.cos(clusterAngle),
+        y: clusterRadius * Math.sin(clusterAngle),
+        intensity: 0.5 + Math.random() * 0.5 // vary nebula brightness
+      });
+    }
 
     const col = new THREE.Color();
     for(let i=0;i<count;i++){
       const idx=i*3;
       const u = Math.random();
       let r:number, ang:number;
+      let particleType: 'core' | 'spiral' | 'halo' | 'nebula' | 'fieldstar' = 'halo';
 
-      if (u < 0.45){ // inner core
+      // Enhanced particle distribution with nebulae and field stars
+      const nebulaChance = Math.min(0.15, nebulaIntensity * 0.15); // 0-15% nebula particles
+      const fieldStarChance = Math.min(0.05, fieldStarDensity * 0.05); // 0-5% field stars
+      const adjustedHaloChance = Math.max(0.05, 0.15 - nebulaChance - fieldStarChance); // remaining for halo
+
+      if (u < 0.20){ // dense central core - reduced to 20%
+        particleType = 'core';
         r = Math.pow(Math.random(),0.45)*rCore;
         ang = Math.random()*Math.PI*2;
-      } else if (u < 0.85){ // flower band
+        
+      } else if (u < 0.65){ // spiral arms structure - reduced to 45%
+        particleType = 'spiral';
+        // Create configurable number of distinct spiral arms with logarithmic spiral pattern
+        const armIndex = Math.floor(Math.random() * spiralArms);
+        const armOffsetAngle = (armIndex * 2 * Math.PI) / spiralArms; // evenly spaced
+        
+        // Random position along the arm with increased density towards outer regions
+        let armProgress = Math.random(); // 0 to 1 along the arm
+        
+        // Bias towards outer regions - higher armProgress values get higher probability
+        // This creates more stars as we move outward from the center
+        const densityBias = Math.random();
+        if (densityBias < 0.6) { // 60% chance to bias towards outer regions
+          armProgress = Math.pow(armProgress, 0.4); // curve that favors higher values
+        }
+        
+        const spiralAngle = armProgress * spiralWinds * 2 * Math.PI; // total angle to wind
+        
+        // Radius grows as we spiral outward
+        r = rCore + (rOuter - rCore) * Math.pow(armProgress, 0.7);
+        
+        // Final angle combines arm offset + spiral winding
+        ang = armOffsetAngle + spiralAngle * spiralTightness;
+        
+        // Add some width/fuzziness to the arms
+        const armWidthPixels = Math.min(r * armWidth, 15); // arms get wider as they extend
+        const perpendicular = ang + Math.PI/2;
+        const armOffset = (Math.random() - 0.5) * armWidthPixels;
+        const armX = r * Math.cos(ang) + armOffset * Math.cos(perpendicular);
+        const armY = r * Math.sin(ang) + armOffset * Math.sin(perpendicular);
+        
+        // Convert back to r,ang for the rest of the pipeline
+        r = Math.sqrt(armX*armX + armY*armY);
+        ang = Math.atan2(armY, armX);
+        
+      } else if (u < 0.65 + adjustedHaloChance){ // sparse halo between arms
+        particleType = 'halo';
         ang = Math.random()*Math.PI*2;
-        const petals = 5.0;
-        const petalNoise = Math.pow(Math.abs(Math.sin(ang*petals)),2.0) * (15.0*flowerWeight) * Math.random();
-        r = rFlower + (Math.random()-0.5)*8 + petalNoise;
-      } else { // halo
-        ang = Math.random()*Math.PI*2;
-        r = rFlower + (rOuter-rFlower)*Math.pow(Math.random(),1.3);
+        r = rFlower + (rOuter-rFlower)*Math.pow(Math.random(),1.8); // more concentrated toward inner edge
+        
+        // Reduce density in spiral regions to make arms more distinct
+        const armSpacing = 2*Math.PI/spiralArms;
+        let minArmDist = Math.PI;
+        for(let arm=0; arm<spiralArms; arm++){
+          const armAngle = arm * armSpacing;
+          let angDiff = Math.abs(ang - armAngle);
+          if(angDiff > Math.PI) angDiff = 2*Math.PI - angDiff;
+          minArmDist = Math.min(minArmDist, angDiff);
+        }
+        
+        // Skip particles too close to spiral arms
+        const armAvoidance = 0.3; // radians (~17 degrees)
+        if(minArmDist < armAvoidance && Math.random() < 0.7){
+          i--; // retry this particle
+          continue;
+        }
+        
+      } else if (u < 0.65 + adjustedHaloChance + nebulaChance){ // clustered nebula particles
+        particleType = 'nebula';
+        // Choose random nebula cluster
+        const clusterIndex = Math.floor(Math.random() * nebulaCenters.length);
+        const cluster = nebulaCenters[clusterIndex];
+        
+        // Generate particle within cluster radius using gaussian distribution
+        const clusterDist = Math.abs(Math.random() - Math.random()) * nebulaRadius; // gaussian-like
+        const clusterAngle = Math.random() * Math.PI * 2;
+        
+        const nebulaX = cluster.x + clusterDist * Math.cos(clusterAngle);
+        const nebulaY = cluster.y + clusterDist * Math.sin(clusterAngle);
+        
+        r = Math.sqrt(nebulaX*nebulaX + nebulaY*nebulaY);
+        ang = Math.atan2(nebulaY, nebulaX);
+        
+        // Skip if nebula particle is too close to galaxy center or too far out
+        if (r < rCore * 0.8 || r > rOuter * 1.2) {
+          i--; // retry this particle
+          continue;
+        }
+        
+      } else { // distant field stars
+        particleType = 'fieldstar';
+        // Place field stars at greater distances with more scattered distribution
+        ang = Math.random() * Math.PI * 2;
+        r = rOuter * fieldStarDistance * (0.8 + Math.random() * 0.7); // 0.8-1.5x outer radius
       }
 
       const x = r*Math.cos(ang);
       let y = r*Math.sin(ang)*flattenY;
       y += Math.sin(r*0.03 + ang*3.0)*1.5;
       
-      // Volumetric Z fall-off
-      const radiusNorm = r / rOuter;                         // 0 .. 1
-      const zMax = (1.0 - radiusNorm*radiusNorm)             // quadratic fall-off
-                   * (rOuter * thicknessZ);                  // cfg.thicknessZ ≈ 0.35
-      const z = (Math.random() - 0.5) * 2 * zMax;
-
-      this.positions[idx]=x;
-      this.positions[idx+1]=y;
-      this.positions[idx+2]=z;
-
-      // ---- color ramp w/ random jitter ----
-      const t = r / rOuter;
-      if (t < 0.2) {                     // bright cyan core
-        col.setRGB(0.70, 0.90, 1.00);
-        this.brightness[i] = 0.9 + Math.random()*0.1;
-      } else if (t < 0.35) {             // NEW deep-blue band (20-35 %)
-        col.copy(COLOR_DEEP_BLUE).lerp(new THREE.Color('#1a8dff'), Math.random()*0.4);
-        this.brightness[i] = 0.7 + Math.random()*0.2;
-      } else if (t < 0.55) {             // purple / violet mix
-        col.setRGB(0.50, 0.00, 1.00).lerp(new THREE.Color('#7e6bff'), Math.random()*0.6);
-        this.brightness[i] = 0.6 + Math.random()*0.2;
-      } else if (t < 0.80) {             // pink / magenta ring
-        col.setRGB(0.85, 0.15, 0.85);
-        this.brightness[i] = 0.5 + Math.random()*0.2;
+      // Enhanced elliptical Z distribution for realistic galactic disk
+      const radiusNorm = Math.min(r / rOuter, 1.0);           // 0 .. 1, clamped
+      
+      // Create elliptical disk profile with configurable ellipticity
+      // diskEllipticity: 0 = flat disk, 1 = full ellipse
+      const ellipseProfile = diskEllipticity * Math.sqrt(Math.max(0, 1.0 - radiusNorm*radiusNorm)) + 
+                            (1.0 - diskEllipticity);
+      const maxThickness = rOuter * thicknessZ * ellipseProfile;
+      
+      // Enhanced gaussian-like distribution with configurable strength
+      const gaussianZ1 = Math.random() - 0.5;
+      const gaussianZ2 = Math.random() - 0.5;
+      const gaussianSum = gaussianZ1 + gaussianZ2; // sum of two uniforms approximates gaussian
+      
+      // Blend between gaussian and uniform based on zGaussianStrength
+      const uniformZ = Math.random() - 0.5;
+      const blendedZ = gaussianSum * zGaussianStrength + uniformZ * (1.0 - zGaussianStrength);
+      const normalizedZ = blendedZ * 0.6; // scale down for reasonable range
+      
+      // Different Z distribution for different particle types
+      let zScale = 1.0;
+      let z: number;
+      
+      if (particleType === 'fieldstar') {
+        // Field stars have more Z spread (thicker distribution) and less elliptical constraint
+        zScale = 1.8;
+        const fieldStarZ = (Math.random() - 0.5) * 2; // more uniform for field stars
+        z = fieldStarZ * maxThickness * zScale;
+      } else if (particleType === 'nebula') {
+        // Nebula particles are more confined to disk plane
+        zScale = 0.6;
+        z = normalizedZ * maxThickness * zScale;
       } else {
-        col.setRGB(0.10, 0.12, 0.22);      // far field dark
-        this.brightness[i] = 0.15 + Math.random()*0.1;
+        // Core, spiral, and halo particles use elliptical gaussian blend
+        if (particleType === 'core') {
+          zScale = 0.4; // central core is very flat
+        } else if (particleType === 'spiral') {
+          zScale = 0.7; // spiral arms are moderately thick
+        } else {
+          zScale = 1.2; // halo particles can be a bit thicker
+        }
+        z = normalizedZ * maxThickness * zScale;
       }
+
+      // Apply galactic plane tilt transformation
+      // First rotate around X axis (pitch), then around Z axis (roll)
+      let tiltedX = x;
+      let tiltedY = y * cosX - z * sinX;  // X rotation: Y' = Y*cos - Z*sin
+      let tiltedZ = y * sinX + z * cosX;  // X rotation: Z' = Y*sin + Z*cos
+      
+      // Then rotate around Z axis
+      const finalX = tiltedX * cosZ - tiltedY * sinZ;  // Z rotation: X' = X*cos - Y*sin
+      const finalY = tiltedX * sinZ + tiltedY * cosZ;  // Z rotation: Y' = X*sin + Y*cos
+      const finalZ = tiltedZ;                          // Z rotation: Z' = Z (unchanged)
+
+      this.positions[idx]=finalX;
+      this.positions[idx+1]=finalY;
+      this.positions[idx+2]=finalZ;
+
+      // ---- Enhanced color system for different particle types ----
+      const t = Math.min(r / rOuter, 1.0); // 0 to 1 from center to edge, clamped
+      let baseBrightness = 0.5;
+      const jitter = Math.random() * 0.3; // color variation
+      
+      if (particleType === 'fieldstar') {
+        // Distant bright blue/white field stars
+        const starIntensity = 0.6 + Math.random() * 0.4; // 0.6-1.0 brightness
+        if (Math.random() < 0.7) {
+          // 70% bright blue field stars
+          col.copy(PAL_CYAN_LIGHT).lerp(PAL_BLUE_CORE, Math.random() * 0.4);
+        } else {
+          // 30% bright white field stars
+          col.setRGB(0.9 + Math.random() * 0.1, 0.95 + Math.random() * 0.05, 1.0);
+        }
+        baseBrightness = starIntensity * fieldStarDensity;
+        
+      } else if (particleType === 'nebula') {
+        // Clustered purple/magenta nebula particles
+        const clusterIndex = Math.floor(Math.random() * nebulaCenters.length);
+        const cluster = nebulaCenters[clusterIndex];
+        
+        // Nebula particles are primarily purple/magenta with some variation
+        if (Math.random() < 0.8) {
+          // 80% magenta/purple nebula
+          col.copy(PAL_MAGENTA).lerp(PAL_VIOLET, Math.random() * 0.6);
+        } else {
+          // 20% deeper purple nebula
+          col.copy(PAL_VIOLET).lerp(PAL_TEAL_DARK, Math.random() * 0.3);
+        }
+        
+        baseBrightness = (0.4 + Math.random() * 0.4) * cluster.intensity * nebulaIntensity;
+        
+      } else if (t < 0.15) { 
+        // Bright cyan-blue core (0-15%)
+        col.copy(PAL_CYAN_CORE).lerp(PAL_CYAN_LIGHT, jitter);
+        baseBrightness = 0.95;
+        
+      } else if (t < 0.35) { 
+        // Deep blue transition zone (15-35%)
+        const mixRatio = (t - 0.15) / 0.2; // 0 to 1 within this band
+        col.copy(PAL_CYAN_CORE).lerp(PAL_BLUE_DEEP, mixRatio + jitter * 0.3);
+        baseBrightness = 0.8 - mixRatio * 0.1;
+        
+      } else if (t < 0.60) { 
+        // Purple-violet zone with magenta accents (35-60%)
+        const mixRatio = (t - 0.35) / 0.25; // 0 to 1 within this band
+        
+        // Enhanced magenta accents for spiral arms
+        if (particleType === 'spiral' && Math.random() < 0.4) {
+          // 40% chance of magenta accent particles in spiral arms
+          col.copy(PAL_MAGENTA).lerp(PAL_VIOLET, 0.3 + jitter * 0.4);
+          // Apply magenta boost
+          col.lerp(PAL_MAGENTA, Math.min(magentaBoost - 1.0, 0.5));
+          baseBrightness = 0.85;
+        } else {
+          // Regular purple-violet gradient
+          col.copy(PAL_BLUE_DEEP).lerp(PAL_VIOLET, mixRatio + jitter * 0.4);
+          baseBrightness = 0.7 - mixRatio * 0.1;
+        }
+        
+      } else if (t < 0.85) { 
+        // Outer magenta-purple ring (60-85%)
+        const mixRatio = (t - 0.60) / 0.25; // 0 to 1 within this band
+        
+        // More magenta in spiral arms
+        if (particleType === 'spiral' && Math.random() < 0.6) {
+          // 60% chance of strong magenta in outer spiral arms
+          col.copy(PAL_MAGENTA).lerp(PAL_VIOLET, jitter * 0.5);
+          baseBrightness = 0.75;
+        } else {
+          // Purple to magenta gradient
+          col.copy(PAL_VIOLET).lerp(PAL_MAGENTA, mixRatio + jitter * 0.3);
+          baseBrightness = 0.6 - mixRatio * 0.1;
+        }
+        
+      } else { 
+        // Dark outer halo (85-100%)
+        const mixRatio = (t - 0.85) / 0.15; // 0 to 1 within this band
+        col.copy(PAL_TEAL_DARK).lerp(PAL_SPACE_BLACK, mixRatio + jitter * 0.2);
+        baseBrightness = 0.25 * (1.0 - mixRatio);
+      }
+      
+      // Additional spiral arm enhancements
+      if (particleType === 'spiral') {
+        baseBrightness *= armBrightness;
+        
+        // Add subtle blue-shift to inner spiral arms for depth
+        if (t < 0.5 && Math.random() < 0.3) {
+          col.lerp(PAL_BLUE_CORE, 0.2);
+        }
+      }
+      
+      // Apply color saturation enhancement
+      if (colorSaturation !== 1.0) {
+        // Convert to HSL, boost saturation, convert back
+        const hsl = col.getHSL({h:0, s:0, l:0});
+        hsl.s = Math.min(1.0, hsl.s * colorSaturation);
+        col.setHSL(hsl.h, hsl.s, hsl.l);
+      }
+      
+      this.brightness[i] = Math.min(1.0, baseBrightness + Math.random() * 0.1);
 
       this.colors[idx]=col.r;
       this.colors[idx+1]=col.g;
@@ -233,9 +599,21 @@ export class BlueyardGalaxyBackground {
           float n = hash3(dc*0.1);
           float rVar = uClusterRadius * (1.0 + 0.15*n);
           if (distXY < rVar){
-            // fade to black
+            // Enhanced fade to black for more visible pocket around central node
             if (uPocketFade==1){
-              fade = smoothstep(rVar, rVar*0.4, distXY);
+              // Create sharper, more visible black boundary
+              float innerBoundary = rVar * 0.3;  // Inner 30% completely black
+              float outerBoundary = rVar * 0.8;  // Fade from 30% to 80%
+              
+              if (distXY < innerBoundary) {
+                fade = 0.0;  // Completely black in inner zone
+              } else if (distXY < outerBoundary) {
+                // Smooth transition from black to normal in middle zone
+                fade = smoothstep(innerBoundary, outerBoundary, distXY) * 0.6;
+              } else {
+                // Gentle fade in outer zone to blend with galaxy
+                fade = 0.6 + smoothstep(outerBoundary, rVar, distXY) * 0.4;
+              }
             }
             // push XY only (visual repulsion)
             if (uPocketPush>0.0){
@@ -248,8 +626,8 @@ export class BlueyardGalaxyBackground {
                 pos.y += dir.y * push;
               }
             }
-            // edge brightness accent for ring look
-            float ring = 1.0 - smoothstep(rVar*0.6, rVar, distXY);
+            // Enhanced edge brightness accent for cleaner ring definition
+            float ring = 1.0 - smoothstep(rVar*0.7, rVar, distXY);
             vColor *= (1.0 + ring * uPocketRingBoost);
           }
         }
@@ -294,12 +672,42 @@ export class BlueyardGalaxyBackground {
       varying float vBright;
       void main(){
         vec2 uv = gl_PointCoord.xy*2.0-1.0;
-        float d = dot(uv,uv);
-        if (d>1.0) discard;
-        float alpha = 1.0 - smoothstep(0.8,1.0,d);
+        float d = length(uv);  // Use length for perfect circular distance
+        if (d > 1.0) discard;  // Discard pixels outside circle
+        
+        // Enhanced circular particle shape with multiple falloff zones
+        float alpha = 1.0;
+        
+        // Create soft circular falloff with multiple zones for better appearance
+        if (d > 0.9) {
+          // Outer edge - very soft falloff
+          alpha = 1.0 - smoothstep(0.9, 1.0, d);
+        } else if (d > 0.6) {
+          // Middle zone - gentle falloff
+          alpha = 1.0 - smoothstep(0.6, 0.9, d) * 0.3;
+        } else {
+          // Inner core - full opacity with slight center softening
+          alpha = 1.0 - d * 0.1;
+        }
+        
         alpha *= vFade * vBright;
-        // gamma-ish brighten center but preserve color: raise color slightly by brightness too
-        vec3 c = vColor * (0.5 + 0.5*vBright); // scales 0.5..1.0
+        
+        // Enhanced color depth with brightness-based color mixing
+        vec3 c = vColor;
+        
+        // Add subtle glow effect for brighter particles
+        if (vBright > 0.7) {
+          // Bright particles get a subtle color boost and glow
+          c = mix(c, c * 1.3, (vBright - 0.7) * 3.33);
+          
+          // Add inner glow for very bright particles (circular)
+          float innerGlow = 1.0 - smoothstep(0.2, 0.6, d);
+          c += innerGlow * vColor * 0.5 * (vBright - 0.7) * 3.33;
+        }
+        
+        // Apply brightness modulation
+        c *= (0.6 + 0.4 * vBright);
+        
         gl_FragColor = vec4(c, alpha);
       }
     `;
