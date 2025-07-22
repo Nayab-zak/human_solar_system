@@ -160,6 +160,23 @@
     <input type="range" min="1.0" max="2.0" step="0.1" [ngModel]="armBrightness" (ngModelChange)="onArmBrightness($event)">
   </label>
 
+  <h5>🌊 Arm Thickness Variation</h5>
+  
+  <label>
+    Max Width (Center): {{armMaxWidth}}px
+    <input type="range" min="5" max="50" step="1" [ngModel]="armMaxWidth" (ngModelChange)="onArmMaxWidth($event)">
+  </label>
+
+  <label>
+    Min Width (Edge): {{armMinWidth}}px
+    <input type="range" min="1" max="10" step="1" [ngModel]="armMinWidth" (ngModelChange)="onArmMinWidth($event)">
+  </label>
+
+  <label>
+    Thickness Profile: {{armThicknessProfile | number:'1.1-1'}}
+    <input type="range" min="0.1" max="2.0" step="0.1" [ngModel]="armThicknessProfile" (ngModelChange)="onArmThicknessProfile($event)">
+  </label>
+
   <hr>
   <h5>💫 Galactic Plane Tilt</h5>
 

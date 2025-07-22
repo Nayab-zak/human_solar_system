@@ -55,6 +55,11 @@ export class ControlPanelComponent implements OnChanges {
   @Input() armWidth = 0.15;
   @Input() armBrightness = 1.3;
   
+  // Arm thickness variation controls
+  @Input() armMaxWidth = 25;
+  @Input() armMinWidth = 3;
+  @Input() armThicknessProfile = 0.6;
+  
   // Galaxy tilt controls
   @Input() galaxyTiltX = 0;    // pitch tilt in degrees
   @Input() galaxyTiltZ = 12;   // roll tilt in degrees
@@ -89,6 +94,11 @@ export class ControlPanelComponent implements OnChanges {
   @Output() spiralWindsChange = new EventEmitter<number>();
   @Output() armWidthChange = new EventEmitter<number>();
   @Output() armBrightnessChange = new EventEmitter<number>();
+  
+  // Arm thickness variation outputs
+  @Output() armMaxWidthChange = new EventEmitter<number>();
+  @Output() armMinWidthChange = new EventEmitter<number>();
+  @Output() armThicknessProfileChange = new EventEmitter<number>();
   
   // Galaxy tilt outputs
   @Output() galaxyTiltXChange = new EventEmitter<number>();
@@ -237,6 +247,22 @@ export class ControlPanelComponent implements OnChanges {
   onArmBrightness(v:any){
     this.armBrightness = +v;
     this.armBrightnessChange.emit(this.armBrightness);
+  }
+
+  // Arm thickness variation handlers
+  onArmMaxWidth(v:any){
+    this.armMaxWidth = +v;
+    this.armMaxWidthChange.emit(this.armMaxWidth);
+  }
+
+  onArmMinWidth(v:any){
+    this.armMinWidth = +v;
+    this.armMinWidthChange.emit(this.armMinWidth);
+  }
+
+  onArmThicknessProfile(v:any){
+    this.armThicknessProfile = +v;
+    this.armThicknessProfileChange.emit(this.armThicknessProfile);
   }
   
   // Galaxy tilt handlers

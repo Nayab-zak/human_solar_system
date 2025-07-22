@@ -30,6 +30,11 @@ export interface BlueyardGalaxyConfig {
   armWidth?: number;       // relative width of spiral arms (default 0.15)
   armBrightness?: number;  // brightness multiplier for arm particles (default 1.3)
   
+  // Arm thickness variation (thick at center, thin at edges)
+  armMaxWidth?: number;    // maximum arm width at galactic center (default 25)
+  armMinWidth?: number;    // minimum arm width at galaxy edge (default 3)
+  armThicknessProfile?: number; // 0..2 how dramatically thickness changes (default 0.6)
+  
   // Enhanced color controls
   colorSaturation?: number; // 0..2 color saturation multiplier (default 1.0)
   magentaBoost?: number;    // 0..2 magenta accent intensity in arms (default 1.0)
@@ -87,6 +92,11 @@ export class BlueyardGalaxyBackground {
       spiralWinds: cfg.spiralWinds ?? 1.5,
       armWidth: cfg.armWidth ?? 0.15,
       armBrightness: cfg.armBrightness ?? 1.3,
+      
+      // Arm thickness variation defaults
+      armMaxWidth: cfg.armMaxWidth ?? 25,
+      armMinWidth: cfg.armMinWidth ?? 3,
+      armThicknessProfile: cfg.armThicknessProfile ?? 0.6,
       
       // Enhanced color defaults
       colorSaturation: cfg.colorSaturation ?? 1.2,
@@ -177,6 +187,17 @@ export class BlueyardGalaxyBackground {
   }
   setArmBrightness(v:number){ 
     this.cfg.armBrightness = Math.max(1.0, Math.min(2.0, v)); // 1.0-2.0x brightness
+  }
+  
+  // Arm thickness variation control methods
+  setArmMaxWidth(v:number){ 
+    this.cfg.armMaxWidth = Math.max(5, Math.min(50, v)); // 5-50 pixels at center
+  }
+  setArmMinWidth(v:number){ 
+    this.cfg.armMinWidth = Math.max(1, Math.min(10, v)); // 1-10 pixels at edge
+  }
+  setArmThicknessProfile(v:number){ 
+    this.cfg.armThicknessProfile = Math.max(0.1, Math.min(2.0, v)); // 0.1-2.0 profile curve
   }
 
   // Enhanced color control methods
@@ -328,10 +349,8 @@ export class BlueyardGalaxyBackground {
         
         // Enhanced arm width: thick at center, gradually thinning outward
         const radiusNormalized = (r - rCore) / (rOuter - rCore); // 0 at center, 1 at outer edge
-        const thicknessProfile = 1.0 - Math.pow(radiusNormalized, 0.6); // Thick at center, thin at edges
-        const maxArmWidth = 25; // Maximum width at the center
-        const minArmWidth = 3;  // Minimum width at the edges
-        const armWidthPixels = minArmWidth + (maxArmWidth - minArmWidth) * thicknessProfile * armWidth;
+        const thicknessProfile = 1.0 - Math.pow(radiusNormalized, this.cfg.armThicknessProfile); // Thick at center, thin at edges
+        const armWidthPixels = this.cfg.armMinWidth + (this.cfg.armMaxWidth - this.cfg.armMinWidth) * thicknessProfile * armWidth;
         
         const perpendicular = ang + Math.PI/2;
         const armOffset = (Math.random() - 0.5) * armWidthPixels;

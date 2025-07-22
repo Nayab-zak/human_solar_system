@@ -52,6 +52,9 @@ import { compatibility } from '../physics/math';
         [spiralWinds]="spiralWinds"
         [armWidth]="armWidth"
         [armBrightness]="armBrightness"
+        [armMaxWidth]="armMaxWidth"
+        [armMinWidth]="armMinWidth"
+        [armThicknessProfile]="armThicknessProfile"
         [galaxyTiltX]="galaxyTiltX"
         [galaxyTiltZ]="galaxyTiltZ"
         [nebulaIntensity]="nebulaIntensity"
@@ -77,6 +80,9 @@ import { compatibility } from '../physics/math';
         (spiralWindsChange)="handleSpiralWinds($event)"
         (armWidthChange)="handleArmWidth($event)"
         (armBrightnessChange)="handleArmBrightness($event)"
+        (armMaxWidthChange)="handleArmMaxWidth($event)"
+        (armMinWidthChange)="handleArmMinWidth($event)"
+        (armThicknessProfileChange)="handleArmThicknessProfile($event)"
         (galaxyTiltXChange)="handleGalaxyTiltX($event)"
         (galaxyTiltZChange)="handleGalaxyTiltZ($event)"
         (nebulaIntensityChange)="handleNebulaIntensity($event)"
@@ -139,6 +145,11 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
   @Input() spiralWinds = 1.5;
   @Input() armWidth = 0.15;
   @Input() armBrightness = 1.3;
+  
+  // Arm thickness variation parameters
+  @Input() armMaxWidth = 25;
+  @Input() armMinWidth = 3;
+  @Input() armThicknessProfile = 0.6;
   
   // Galaxy tilt parameters
   @Input() galaxyTiltX = 0;    // pitch tilt in degrees
@@ -270,6 +281,11 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
       spiralWinds: this.spiralWinds,
       armWidth: this.armWidth,
       armBrightness: this.armBrightness,
+      
+      // Arm thickness variation configuration
+      armMaxWidth: this.armMaxWidth,
+      armMinWidth: this.armMinWidth,
+      armThicknessProfile: this.armThicknessProfile,
       
       // Galaxy tilt configuration
       galaxyTiltX: this.galaxyTiltX,
@@ -706,6 +722,25 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
   handleArmBrightness(v:number){
     this.armBrightness = v;
     this.galaxy?.setArmBrightness(v);
+    this.galaxy?.reseed();
+  }
+  
+  // Arm thickness variation handlers
+  handleArmMaxWidth(v:number){
+    this.armMaxWidth = v;
+    this.galaxy?.setArmMaxWidth(v);
+    this.galaxy?.reseed();
+  }
+
+  handleArmMinWidth(v:number){
+    this.armMinWidth = v;
+    this.galaxy?.setArmMinWidth(v);
+    this.galaxy?.reseed();
+  }
+
+  handleArmThicknessProfile(v:number){
+    this.armThicknessProfile = v;
+    this.galaxy?.setArmThicknessProfile(v);
     this.galaxy?.reseed();
   }
   
