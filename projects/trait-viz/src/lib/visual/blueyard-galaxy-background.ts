@@ -326,8 +326,13 @@ export class BlueyardGalaxyBackground {
         // Final angle combines arm offset + spiral winding
         ang = armOffsetAngle + spiralAngle * spiralTightness;
         
-        // Add some width/fuzziness to the arms
-        const armWidthPixels = Math.min(r * armWidth, 15); // arms get wider as they extend
+        // Enhanced arm width: thick at center, gradually thinning outward
+        const radiusNormalized = (r - rCore) / (rOuter - rCore); // 0 at center, 1 at outer edge
+        const thicknessProfile = 1.0 - Math.pow(radiusNormalized, 0.6); // Thick at center, thin at edges
+        const maxArmWidth = 25; // Maximum width at the center
+        const minArmWidth = 3;  // Minimum width at the edges
+        const armWidthPixels = minArmWidth + (maxArmWidth - minArmWidth) * thicknessProfile * armWidth;
+        
         const perpendicular = ang + Math.PI/2;
         const armOffset = (Math.random() - 0.5) * armWidthPixels;
         const armX = r * Math.cos(ang) + armOffset * Math.cos(perpendicular);
@@ -429,7 +434,12 @@ export class BlueyardGalaxyBackground {
         if (particleType === 'core') {
           zScale = 0.4; // central core is very flat
         } else if (particleType === 'spiral') {
-          zScale = 0.7; // spiral arms are moderately thick
+          // Enhanced spiral arm Z-thickness: thick at center, thin at edges
+          const radiusNorm = Math.min(r / rOuter, 1.0);
+          const thicknessProfile = 1.0 - Math.pow(radiusNorm, 0.8); // Gradual thinning
+          const maxSpiralThickness = 1.2; // Thick at center
+          const minSpiralThickness = 0.3; // Thin at edges
+          zScale = minSpiralThickness + (maxSpiralThickness - minSpiralThickness) * thicknessProfile;
         } else {
           zScale = 1.2; // halo particles can be a bit thicker
         }
