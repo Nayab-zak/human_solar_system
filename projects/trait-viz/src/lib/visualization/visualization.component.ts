@@ -42,6 +42,7 @@ import { compatibility } from '../physics/math';
         [galaxyParticles]="galaxyParticles"
         [glowStrength]="glowStrength"
         [galaxyPointSize]="galaxyPointSize"
+        [galaxyCoreSize]="galaxyCoreSize"
         [dragCluster]="dragCluster"
         [galaxyClearPush]="galaxyClearPush"
         [galaxyPocketPush]="galaxyPocketPush"
@@ -75,6 +76,7 @@ import { compatibility } from '../physics/math';
         (galaxyPocketRingBoostChange)="handlePocketRingBoost($event)"
         (centralClearanceChange)="handleCentralClearance($event)"
         (galaxyPointSizeChange)="handlePointSize($event)"
+        (galaxyCoreSizeChange)="handleCoreSize($event)"
         (spiralArmsChange)="handleSpiralArms($event)"
         (spiralTightnessChange)="handleSpiralTightness($event)"
         (spiralWindsChange)="handleSpiralWinds($event)"
@@ -116,7 +118,7 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
   @Input() kRepulsion  = 1;
   @Input() damping     = 0.95;
   @Input() angularSpeed = 0.25;
-  @Input() restLength   = 25;     // approximate target ring radius - reduced for tighter clustering
+  @Input() restLength   = 40;      // Reduced to keep nodes closer to central node
   @Input() timestep     = 1/60;
 
   /** Dataset controls */
@@ -124,12 +126,13 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
   @Input() nodeCount = 4;
 
   /** Visual controls */
-  @Input() galaxyParticles = 40000;
+  @Input() galaxyParticles = 180000;  // Optimal balance: visually rich but performant
   @Input() galaxyBendStrength = 0.5;
   @Input() galaxyTwinkleSpeed = 0.5;
-  @Input() galaxyAmbientRot = 0.005;
+  @Input() galaxyAmbientRot = 0.02;  // Much higher default for very visible rotation
   @Input() glowStrength = 1.2;
   @Input() galaxyPointSize = 2.0;  // Star size control
+  @Input() galaxyCoreSize = 225;   // Galaxy core size control
   @Input() dragCluster = true; // true=move cluster rigidly, false=central-only
   @Input() integrateNodeColors = true; // recolor nodes to galaxy ramp
   @Input() nodeSpriteSize = 4; // px scale factor; central scaled larger
@@ -144,7 +147,7 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
   @Input() spiralTightness = 0.15;
   @Input() spiralWinds = 1.5;
   @Input() armWidth = 0.15;
-  @Input() armBrightness = 1.3;
+  @Input() armBrightness = 2.0;        // Increased for better visibility with larger galaxy
   
   // Arm thickness variation parameters
   @Input() armMaxWidth = 25;
@@ -224,6 +227,7 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
       cfg.damping     = this.damping;
       cfg.angularSpeed= this.angularSpeed;
       cfg.restLength  = this.restLength;
+      cfg.visualRadius = this.galaxy?.cfg.rOuter || 800; // Maintain expanded visual radius
     }
   }
 
@@ -267,6 +271,7 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
     // create galaxy
     this.galaxy = new BlueyardGalaxyBackground({
       count: this.galaxyParticles,
+      rCore: this.galaxyCoreSize,              // Add core size configuration
       bendStrength: this.galaxyBendStrength,
       twinkleSpeed: this.galaxyTwinkleSpeed,
       ambientRotSpeed: this.galaxyAmbientRot,
@@ -304,6 +309,9 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
     });
     this.scene.add(this.galaxy.getObject3D());
 
+    // Set camera reference for screen-relative rotation
+    this.galaxy.setCameraReference(this.camera);
+
     // Reseed to apply flowerWeight settings for stronger magenta petals
     this.galaxy.reseed();
 
@@ -331,12 +339,12 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
       // provisional color (updated after engine built)
       const mat = makeGlowySpriteMaterial(0xffffff); // temp; recolor later
       const s = new THREE.Sprite(mat);
-      // spawn near rest length disc
-      const r = this.restLength + Math.random()*this.restLength*0.5;
+      // spawn close to central node with reduced initial distance
+      const r = this.restLength * 0.3 + Math.random()*this.restLength*0.4; // Much closer spawning range
       const theta = Math.random()*Math.PI*2;
       const x = r*Math.cos(theta);
-      const y = (Math.random()-0.5)*r*0.5; // compressed vertical for disc feel
-      const z = (Math.random()-0.5)*r*0.3;
+      const y = (Math.random()-0.5)*r*0.5; // Reduced vertical spread
+      const z = (Math.random()-0.5)*r*0.3; // Reduced depth spread
       s.position.set(x,y,z);
       s.scale.setScalar(this.nodeSpriteSize);
       n.mesh = s;
@@ -363,6 +371,7 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
       angularSpeed: this.angularSpeed,
       restLength: this.restLength,
       dt: this.timestep,
+      visualRadius: this.galaxy?.cfg.rOuter || 800, // Allow nodes to move throughout entire galaxy
     };
 
     this.engine = new RepoSpringEngine(central, outers, this.traitKeys, cfg);
@@ -526,12 +535,12 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
         s.position.copy(newPos);
         console.log(`Restored ${n.id} position:`, newPos);
       } else {
-        // Fallback to default positioning if no saved position
-        const r = this.restLength + Math.random() * this.restLength * 0.5;
+        // Fallback to default positioning if no saved position - closer initial spawning
+        const r = this.restLength * 0.3 + Math.random() * this.restLength * 0.4; // Closer spawning
         const theta = Math.random() * Math.PI * 2;
         const x = r * Math.cos(theta);
-        const y = (Math.random() - 0.5) * r * 0.5;
-        const z = (Math.random() - 0.5) * r * 0.3;
+        const y = (Math.random() - 0.5) * r * 0.5; // Reduced spread
+        const z = (Math.random() - 0.5) * r * 0.3; // Reduced spread
         s.position.set(x, y, z);
         console.log(`Default position for ${n.id}:`, s.position);
       }
@@ -586,6 +595,7 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
       cfg.damping     = this.damping;
       cfg.angularSpeed= this.angularSpeed;
       cfg.restLength  = this.restLength;
+      cfg.visualRadius = this.galaxy?.cfg.rOuter || 800; // Maintain expanded visual radius
     }
   }
 
@@ -642,7 +652,7 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
     this.updateGalaxyClusterUniform();
   }
 
-  handleVisualChange(v:{bend:number;twinkle:number;ambient:number;particles:number;glow:number}){
+  handleVisualChange(v:{bend:number;twinkle:number;ambient:number;particles:number;glow:number;rotationAxis:string;rotationSpeed:number;rotationMode:string}){
     this.galaxyBendStrength = v.bend;
     this.galaxyTwinkleSpeed = v.twinkle;
     this.galaxyAmbientRot   = v.ambient;
@@ -651,7 +661,12 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
 
     if (this.galaxy){
       this.galaxy.setBendStrength(this.galaxyBendStrength);
-      // Note: setTwinkleSpeed and setAmbientRotSpeed methods removed - these are set in constructor
+      this.galaxy.setAmbientRotSpeed(this.galaxyAmbientRot);  // Enable dynamic ambient rotation
+      this.galaxy.setRotationAxis(v.rotationAxis);            // Set rotation axis
+      this.galaxy.setRotationMode(v.rotationMode);            // Set rotation mode
+      this.galaxy.setRotationSpeed(v.rotationSpeed);          // Set rotation speed
+      this.galaxy.setCameraReference(this.camera);            // Pass camera reference for screen-relative rotation
+      // Note: setTwinkleSpeed method removed - these are set in constructor
       // Changing particle count triggers reseed (slow) — do after slider release if needed.
       this.galaxy.reseed(this.galaxyParticles);
     }
@@ -688,6 +703,11 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
   handlePointSize(v:number){
     this.galaxyPointSize = v;
     this.galaxy?.setPointSize(v);
+  }
+
+  handleCoreSize(v:number){
+    this.galaxyCoreSize = v;
+    this.galaxy?.setCoreSize(v);
   }
 
   handleGalaxyReseed(){
@@ -885,7 +905,12 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
     const visibilityMultiplier = this.centralNodeClearance;   // User-configurable multiplier
     const minVisiblePocket = centralNodeBaseRadius * visibilityMultiplier;
     
-    // Still consider distance to nearest outer node for dynamic sizing
+    // Allow nodes to move throughout the entire galaxy including spiral arms
+    // Galaxy outer radius is 800, so we want to allow movement up to that distance
+    const galaxyOuterRadius = this.galaxy.cfg.rOuter || 800;
+    const maxAllowableDistance = galaxyOuterRadius * 0.9; // 90% of galaxy radius
+    
+    // Still consider distance to nearest outer node for dynamic sizing, but with expanded limits
     let minD = Infinity;
     for (let i=0;i<this.nodes.length;i++){
       if (i===this.centralIndex) continue;
@@ -896,12 +921,13 @@ export class VisualizationComponent implements AfterViewInit, OnDestroy, OnChang
     }
     if (!isFinite(minD)) minD = minVisiblePocket;
     
-    // Enhanced sizing: use larger of minimum visible pocket or dynamic sizing
-    const dynamicPocket = Math.min(minD * 0.7, minVisiblePocket * 1.5); // Up to 1.5x min size
-    const target = Math.max(minVisiblePocket, dynamicPocket);
+    // Enhanced sizing: allow much larger cluster radius to encompass spiral arms
+    // Only create bubble around central node, allow outer nodes to roam freely
+    const dynamicPocket = Math.min(minD * 0.3, maxAllowableDistance); // Much more permissive
+    const target = Math.max(minVisiblePocket, Math.min(dynamicPocket, maxAllowableDistance));
     
     this._clusterRadius = THREE.MathUtils.lerp(
-        this._clusterRadius ?? target, target, 0.25);
+        this._clusterRadius ?? target, target, 0.1); // Slower interpolation for stability
     this.galaxy.setCluster(center, this._clusterRadius);
   }
 

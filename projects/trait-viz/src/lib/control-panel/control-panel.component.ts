@@ -38,10 +38,14 @@ export class ControlPanelComponent implements OnChanges {
 
   @Input() galaxyBendStrength = 0.5;
   @Input() galaxyTwinkleSpeed = 0.5;
-  @Input() galaxyAmbientRot = 0.005;
-  @Input() galaxyParticles = 40000;
+  @Input() galaxyAmbientRot = 0.02;  // Much higher default for very visible rotation
+  @Input() galaxyRotationAxis = 'z';  // 'x', 'y', or 'z' axis for rotation
+  @Input() galaxyRotationMode = 'screen';  // 'screen', 'world', or 'local' rotation mode
+  @Input() galaxyRotationSpeed = 0.02;  // Speed of rotation
+  @Input() galaxyParticles = 180000;   // Optimal balance: visually rich but performant
   @Input() glowStrength = 0.2;
   @Input() galaxyPointSize = 2.0;  // Star size control
+  @Input() galaxyCoreSize = 225;   // Galaxy core radius control
   @Input() dragCluster = true;
   @Input() galaxyClearPush = 1; // 0..1
   @Input() galaxyPocketPush = 0.8;
@@ -53,7 +57,7 @@ export class ControlPanelComponent implements OnChanges {
   @Input() spiralTightness = 0.15;
   @Input() spiralWinds = 1.5;
   @Input() armWidth = 0.15;
-  @Input() armBrightness = 1.3;
+  @Input() armBrightness = 2.0;        // Increased for better visibility with larger galaxy
   
   // Arm thickness variation controls
   @Input() armMaxWidth = 25;
@@ -86,6 +90,7 @@ export class ControlPanelComponent implements OnChanges {
   @Output() galaxyPocketRingBoostChange = new EventEmitter<number>();
   @Output() galaxyReseedChange = new EventEmitter<void>();
   @Output() galaxyPointSizeChange = new EventEmitter<number>();  // Star size output
+  @Output() galaxyCoreSizeChange = new EventEmitter<number>();   // Galaxy core size output
   @Output() centralClearanceChange = new EventEmitter<number>(); // Central node clearance output
 
   // Spiral structure outputs
@@ -117,6 +122,7 @@ export class ControlPanelComponent implements OnChanges {
 
   @Output() visualChange = new EventEmitter<{
     bend:number; twinkle:number; ambient:number; particles:number; glow:number;
+    rotationAxis:string; rotationSpeed:number; rotationMode:string;
   }>();
 
   editNodeIndex = 0;
@@ -180,18 +186,29 @@ export class ControlPanelComponent implements OnChanges {
       ambient: this.galaxyAmbientRot,
       particles: this.galaxyParticles,
       glow: this.glowStrength,
+      rotationAxis: this.galaxyRotationAxis,
+      rotationSpeed: this.galaxyRotationSpeed,
+      rotationMode: this.galaxyRotationMode,
     });
   }
 
   onBend(v:any){ this.galaxyBendStrength=+v; this.emitVisual(); }
   onTw(v:any){ this.galaxyTwinkleSpeed=+v; this.emitVisual(); }
   onAmb(v:any){ this.galaxyAmbientRot=+v; this.emitVisual(); }
+  onRotationAxis(v:any){ this.galaxyRotationAxis=v; this.emitVisual(); }
+  onRotationMode(v:any){ this.galaxyRotationMode=v; this.emitVisual(); }
+  onRotationSpeed(v:any){ this.galaxyRotationSpeed=+v; this.emitVisual(); }
   onPart(v:any){ this.galaxyParticles=+v; this.emitVisual(); }
   onGlow(v:any){ this.glowStrength=+v; this.emitVisual(); }
   
   onPointSize(v:any){ 
     this.galaxyPointSize=+v; 
     this.galaxyPointSizeChange.emit(this.galaxyPointSize); 
+  }
+
+  onCoreSize(v:any){ 
+    this.galaxyCoreSize=+v; 
+    this.galaxyCoreSizeChange.emit(this.galaxyCoreSize); 
   }
 
   onClearPush(v:any){

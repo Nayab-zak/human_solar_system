@@ -13,7 +13,7 @@ An interactive 3D visualization system that represents human traits and preferen
 - **Physics-Based Animation**: Spring forces create natural, organic movement patterns
 
 ### 🌌 **Advanced Galaxy Background**
-- **40,000+ Particle System**: Volumetric galaxy background with realistic depth and falloff
+- **180,000+ Particle System**: Massive volumetric galaxy background with realistic depth and falloff
 - **Custom GLSL Shaders**: Per-particle brightness attributes and gentle pocket push effects
 - **Dynamic Repulsion**: Galaxy particles intelligently avoid node clusters
 - **Color Zones**: Five distinct color regions from cyan core to magenta outer petals

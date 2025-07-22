@@ -15,6 +15,9 @@ export interface BlueyardGalaxyConfig {
   bendStrength?: number;
   bendRadius?: number;
   ambientRotSpeed?: number;
+  rotationAxis?: string;    // 'x', 'y', 'z' - which axis to rotate around
+  rotationMode?: string;    // 'screen', 'world', 'local' - rotation coordinate system
+  rotationSpeed?: number;   // rotation speed (replaces ambientRotSpeed)
   twinkleSpeed?: number;
   twinkleAmp?: number;
   pointSize?: number;
@@ -61,6 +64,7 @@ export class BlueyardGalaxyBackground {
   private material: THREE.ShaderMaterial;
   private points: THREE.Points;
   private rotObj = new THREE.Object3D();
+  private cameraRef?: THREE.Camera; // Reference to camera for screen-relative rotation
   private positions!: Float32Array;
   private colors!: Float32Array;
   private brightness!: Float32Array;
@@ -69,15 +73,18 @@ export class BlueyardGalaxyBackground {
 
   constructor(cfg: BlueyardGalaxyConfig = {}){
     this.cfg = {
-      count: cfg.count ?? 70000,
-      rCore: cfg.rCore ?? 25,
-      rFlower: cfg.rFlower ?? 55,
-      rOuter: cfg.rOuter ?? 220,
+      count: cfg.count ?? 180000,        // Optimal balance: visually rich but performant
+      rCore: cfg.rCore ?? 225,           // Large core (9x original)
+      rFlower: cfg.rFlower ?? 400,       // Scale up flower band
+      rOuter: cfg.rOuter ?? 800,         // Much larger outer radius
       flattenY: cfg.flattenY ?? 0.45,
       thicknessZ: cfg.thicknessZ ?? 0.35,
       bendStrength: cfg.bendStrength ?? 0.4,
       bendRadius: cfg.bendRadius ?? 10,
-      ambientRotSpeed: cfg.ambientRotSpeed ?? 0.001,
+      ambientRotSpeed: cfg.ambientRotSpeed ?? 0.02,  // Much higher default for very visible rotation
+      rotationAxis: cfg.rotationAxis ?? 'z',        // Default to Z-axis rotation
+      rotationMode: cfg.rotationMode ?? 'screen',   // Default to screen-relative rotation
+      rotationSpeed: cfg.rotationSpeed ?? 0.02,     // New dedicated rotation speed
       twinkleSpeed: cfg.twinkleSpeed ?? 0.2,
       twinkleAmp: cfg.twinkleAmp ?? 0.06,
       pointSize: cfg.pointSize ?? 2.0,  // Even bigger galaxy stars
@@ -86,12 +93,12 @@ export class BlueyardGalaxyBackground {
       pocketRingBoost: cfg.pocketRingBoost ?? 1.2,
       flowerWeight: cfg.flowerWeight ?? 0.8,
       
-      // Spiral arm defaults
+      // Spiral arm defaults - enhanced for better visibility
       spiralArms: cfg.spiralArms ?? 3,
       spiralTightness: cfg.spiralTightness ?? 0.15,
       spiralWinds: cfg.spiralWinds ?? 1.5,
       armWidth: cfg.armWidth ?? 0.15,
-      armBrightness: cfg.armBrightness ?? 1.3,
+      armBrightness: cfg.armBrightness ?? 2.0,  // Increased from 1.3 to 2.0 for better visibility
       
       // Arm thickness variation defaults
       armMaxWidth: cfg.armMaxWidth ?? 25,
@@ -155,6 +162,10 @@ export class BlueyardGalaxyBackground {
   }
 
   getObject3D(){ return this.rotObj; }
+  
+  setCameraReference(camera: THREE.Camera){ 
+    this.cameraRef = camera; 
+  }
 
   /* ---------- public controls ---------- */
   setCluster(c:THREE.Vector3, r:number){
@@ -171,6 +182,23 @@ export class BlueyardGalaxyBackground {
   setPocketRingBoost(v:number){ this.cfg.pocketRingBoost=v; this.material.uniforms['uPocketRingBoost'].value=v; }
   setPocketInner(v:number){ this.material.uniforms['uPocketInner'].value = v; }
   setBendStrength(v:number){ this.cfg.bendStrength=v; this.material.uniforms['uBendStrength'].value=v; }
+  setAmbientRotSpeed(v:number){ this.cfg.ambientRotSpeed = Math.max(0, Math.min(0.05, v)); } // 0-0.05 range
+  
+  setRotationAxis(axis:string){ 
+    if(['x', 'y', 'z'].includes(axis)) {
+      this.cfg.rotationAxis = axis; 
+    }
+  }
+  
+  setRotationMode(mode:string){ 
+    if(['screen', 'world', 'local'].includes(mode)) {
+      this.cfg.rotationMode = mode; 
+    }
+  }
+  
+  setRotationSpeed(v:number){ 
+    this.cfg.rotationSpeed = Math.max(0, Math.min(0.1, v)); // 0-0.1 range
+  }
   
   // Spiral arm control methods
   setSpiralArms(count:number){ 
@@ -256,11 +284,105 @@ export class BlueyardGalaxyBackground {
     this.material.uniforms['uPointSize'].value = this.cfg.pointSize;
   }
 
+  setCoreSize(v:number){
+    this.cfg.rCore = Math.max(15, Math.min(450, v)); // 15-450 core radius for larger galaxy
+    this.reseed(); // Core size change requires reseeding particles
+  }
+
   update(dt:number){
     this.time+=dt;
     this.material.uniforms['uTime'].value=this.time;
+    
+    // New rotation system with mode and axis selection
+    if(this.cfg.rotationSpeed!==0){
+      const speed = this.cfg.rotationSpeed * dt;
+      
+      if(this.cfg.rotationMode === 'screen' && this.cameraRef){
+        // Screen-relative rotation: rotate relative to camera view
+        this.applyScreenRelativeRotation(speed);
+      } else if(this.cfg.rotationMode === 'local'){
+        // Local rotation: rotate around galaxy's own tilted axes
+        this.applyLocalRotation(speed);
+      } else {
+        // World rotation: rotate around world coordinate axes
+        this.applyWorldRotation(speed);
+      }
+    }
+    
+    // Legacy ambient rotation (kept for backwards compatibility)
     if(this.cfg.ambientRotSpeed!==0){
-      this.rotObj.rotation.y+=this.cfg.ambientRotSpeed*dt;
+      this.rotObj.rotation.x+=this.cfg.ambientRotSpeed*dt;
+    }
+  }
+  
+  private applyScreenRelativeRotation(speed: number){
+    if(!this.cameraRef) return;
+    
+    // Get camera's transformation matrices
+    const cameraMatrix = this.cameraRef.matrixWorld.clone();
+    const cameraRotation = new THREE.Euler().setFromRotationMatrix(cameraMatrix);
+    
+    // Create rotation around screen axes
+    const tempObject = new THREE.Object3D();
+    tempObject.position.copy(this.rotObj.position);
+    tempObject.rotation.copy(this.rotObj.rotation);
+    
+    switch(this.cfg.rotationAxis){
+      case 'x': // Screen horizontal (side-to-side)
+        tempObject.rotateOnWorldAxis(new THREE.Vector3(1, 0, 0).applyEuler(cameraRotation), speed);
+        break;
+      case 'y': // Screen vertical (up-down) 
+        tempObject.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0).applyEuler(cameraRotation), speed);
+        break;
+      case 'z': // Screen depth (in-out)
+      default:
+        tempObject.rotateOnWorldAxis(new THREE.Vector3(0, 0, 1).applyEuler(cameraRotation), speed);
+        break;
+    }
+    
+    this.rotObj.rotation.copy(tempObject.rotation);
+  }
+  
+  private applyLocalRotation(speed: number){
+    // Rotate around galaxy's own axes (considering its tilt)
+    const tiltXRad = (this.cfg.galaxyTiltX! * Math.PI) / 180;
+    const tiltZRad = (this.cfg.galaxyTiltZ! * Math.PI) / 180;
+    
+    const localRotationMatrix = new THREE.Matrix4()
+      .makeRotationX(tiltXRad)
+      .multiply(new THREE.Matrix4().makeRotationZ(tiltZRad));
+    
+    const localAxis = new THREE.Vector3();
+    switch(this.cfg.rotationAxis){
+      case 'x':
+        localAxis.set(1, 0, 0);
+        break;
+      case 'y':
+        localAxis.set(0, 1, 0);
+        break;
+      case 'z':
+      default:
+        localAxis.set(0, 0, 1);
+        break;
+    }
+    
+    localAxis.applyMatrix4(localRotationMatrix);
+    this.rotObj.rotateOnWorldAxis(localAxis, speed);
+  }
+  
+  private applyWorldRotation(speed: number){
+    // Simple world coordinate rotation
+    switch(this.cfg.rotationAxis){
+      case 'x':
+        this.rotObj.rotation.x += speed;
+        break;
+      case 'y':
+        this.rotObj.rotation.y += speed;
+        break;
+      case 'z':
+      default:
+        this.rotObj.rotation.z += speed;
+        break;
     }
   }
 
@@ -318,12 +440,12 @@ export class BlueyardGalaxyBackground {
       const fieldStarChance = Math.min(0.05, fieldStarDensity * 0.05); // 0-5% field stars
       const adjustedHaloChance = Math.max(0.05, 0.15 - nebulaChance - fieldStarChance); // remaining for halo
 
-      if (u < 0.20){ // dense central core - reduced to 20%
+      if (u < 0.10){ // reduced core to 10% since it's now much larger physically
         particleType = 'core';
         r = Math.pow(Math.random(),0.45)*rCore;
         ang = Math.random()*Math.PI*2;
         
-      } else if (u < 0.65){ // spiral arms structure - reduced to 45%
+      } else if (u < 0.70){ // increased spiral arms to 60% for better visibility
         particleType = 'spiral';
         // Create configurable number of distinct spiral arms with logarithmic spiral pattern
         const armIndex = Math.floor(Math.random() * spiralArms);
